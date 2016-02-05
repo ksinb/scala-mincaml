@@ -11,7 +11,7 @@ libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % 
   */
 
 object Main {
-  def main(args: Array[String]) = {
+  def main(args: scala.Array[String]) = {
     println("hoge")
   }
 }
