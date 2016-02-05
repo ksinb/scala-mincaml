@@ -98,13 +98,4 @@ class GrammerParser extends RegexParsers {
   //def ELEMS : Parser[Any] = ELEMS ~ COMMA ~ EXP | EXP ~ COMMA ~ EXP
 
   //def PAT : Parser[Any] = PAT ~ COMMA ~ IDENT | IDENT ~ COMMA ~ IDENT
-
-  /*
-  def apply(s : String) : Unit = {
-    parseAll(EXP, s) match {
-      case Success(_, _) => println("Success")
-      case x => println("Failure: " + x)
-    }
-  }
-  */
 }
