@@ -1,7 +1,7 @@
 /**
   * Created by Help Desk on 2016/02/04.
   */
-package scalamincaml
+
 import scala.util.parsing.combinator._
 /*
 object Grammar extends GrammarParser {
@@ -16,7 +16,7 @@ object Grammar extends GrammarParser {
   }
 }
 */
-class GrammarParser extends RegexParsers {
+class GrammerParser extends RegexParsers {
   def BOOL : Parser[Any] = "true" | "false"
   def INT : Parser[Any] = """[0-9]+""".r
   //def FLOAT : Parser[Any] = INT ~  """(.[0-9]*)? ([e E][+ -]?[0-9]+)?""".r
