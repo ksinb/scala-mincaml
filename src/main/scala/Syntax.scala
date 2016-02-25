@@ -1,26 +1,30 @@
 /**
   * Created by Help Desk on 2016/02/05.
   */
+package  scala_mincaml
 
-class Syntax
+sealed class Syntax
 case class MUnit() extends Syntax
 case class MBool(t:Boolean) extends Syntax
 case class MInt(t:Int) extends Syntax
 case class MFloat(t:Float) extends Syntax
+
 case class MNot(t:Syntax) extends Syntax
 case class MNeg(t:Syntax) extends Syntax
-case class MAdd(t: Syntax, u: Syntax) extends Syntax
+
+case class MAdd(t: Any, u: Any) extends Syntax
 case class MSub(t: Syntax, u: Syntax) extends Syntax
-case class MFNeg(t: Syntax) extends Syntax
 case class MFAdd(t: Syntax, u: Syntax) extends Syntax
 case class MFSub(t: Syntax, u: Syntax) extends Syntax
 case class MFMul(t: Syntax, u: Syntax) extends Syntax
 case class MFDiv(t: Syntax, u: Syntax) extends Syntax
+
+case class MFNeg(t: Syntax) extends Syntax
 case class MEq(t: Syntax, u: Syntax) extends Syntax
 case class MLE(t: Syntax, u: Syntax) extends Syntax
 case class MIf(t: Syntax, u: Syntax, v: Syntax) extends Syntax
 case class MLet(t: Syntax, u: Syntax) extends Syntax
-case class MVar(t: Id) extends Syntax
+case class MVar(t: String) extends Syntax
 
 case class MLetRec(t:String) extends Syntax
 
