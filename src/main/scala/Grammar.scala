@@ -29,7 +29,7 @@ class Grammar extends JavaTokenParsers with PackratParsers {
   lazy val File : PackratParser[Any] =
     Expression ~ chainl1(Expression, WS ^^ { _  => (l:Any, r:Any) => (l, r)})
 
-  lazy val WS : PackratParser[String] = rep(Blank) ^^ {_=>":"}
+  lazy val WS : PackratParser[Any] = rep(Blank)
   lazy val Blank = " " | "\n" | "\t" | "\r"
   lazy val anySpace: PackratParser[String] = rep("""\s""".r) ^^ { _.mkString }
 
@@ -241,29 +241,29 @@ class Grammar extends JavaTokenParsers with PackratParsers {
       case i ~ ex1 ~ t ~ ex2 ~ e ~ ex3 => new MIf(ex1, ex2, ex3)
     }
 
-  /*
+/*
   // LET REC fundefs IN exp
   lazy val RecursiveFunctionDeclaration : PackratParser[MLetRec] =
     Let ~ Rec ~ Fundefs ~ In ~ Expression ^^ {
       case lt ~ rc ~ fd ~ in ~ exp => new MLetRec(fd, exp)
     }
-
+*/
   //fundefs:
   //| fundef AND fundefs
   //| fundef
-  lazy val Fundefs: PackratParser[List[T]] =
-    chainl1(Fundef, And ^^ { _  => (l:T, r:T) => List(l, r)})
+  lazy val Fundefs: PackratParser[Any] =
+    chainl1(Fundef, And ^^ { _  => (l:Any, r:Any) => List(l, r)})
 
   //fundef:
   //| IDENT formal_args EQUAL exp
-  lazy val Fundef: PackratParser[List] =
-    Ident ~ FormalArgList ~ Equal ~ Ident
+  lazy val Fundef: PackratParser[Any] =
+    Ident ~ FormalArgList ~ Equal ~ Ident ^^ {
+      _ => (l:List[T], r:T) => List(l, r)
+    }
 
   lazy val FormalArgList : PackratParser[List[T]] =
-    chainl1(Ident, WS ^^ {
-      case op => (l:T, r:T) => List(l)++List(r)}
-    )
-*/
+    repsep(Ident, WS) ^^ {List() ++ _}
+
   lazy val VariableDeclaration : PackratParser[MLet] =
     Let ~ Ident ~ Equal ~ Expression ~ In ~ Expression ^^ {
       case l~id~e~exp1~i~exp2 => new MLet(id, exp1, exp2)
@@ -374,10 +374,10 @@ class Grammar extends JavaTokenParsers with PackratParsers {
   lazy val hoge: PackratParser[String] = anySpace~>"hoge"
 */
   def parse = {
-   //val res = parseAll(hoge, "1|1|1|1" )
+   val res = parseAll(FormalArgList, "hoge1 hage1 hoge2 hage2" )
    //val res = parseAll(Expression, "Array.create true false"  )
   //val res = parseAll(Expression, "false.(true).(false)" )
-   val res = parseAll(Expression, "if false then true else false" )
+   //val res = parseAll(Expression, "if false then true else false" )
     println(res)
   }
 
