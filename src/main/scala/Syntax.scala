@@ -3,41 +3,44 @@
   */
 package  scala_mincaml
 
-sealed class Syntax
-case class MUnit() extends Syntax
-case class MBool(t:Boolean) extends Syntax
-case class MInt(t:Int) extends Syntax
-case class MFloat(t:Float) extends Syntax
+sealed class T()
+case class MUnit() extends T
+case class MBool(t:Boolean) extends T
+case class MInt(t:Int) extends T
+case class MFloat(t:Float) extends T
 
-case class MNot(t:Syntax) extends Syntax
-case class MNeg(t:Syntax) extends Syntax
+case class MNot(t:T) extends T
 
-case class MAdd(t: Any, u: Any) extends Syntax
-case class MSub(t: Syntax, u: Syntax) extends Syntax
-case class MFAdd(t: Syntax, u: Syntax) extends Syntax
-case class MFSub(t: Syntax, u: Syntax) extends Syntax
-case class MFMul(t: Syntax, u: Syntax) extends Syntax
-case class MFDiv(t: Syntax, u: Syntax) extends Syntax
+case class MNeg(t:T) extends T
+case class MFNeg(t: T) extends T
 
-case class MFNeg(t: Syntax) extends Syntax
-case class MEq(t: Syntax, u: Syntax) extends Syntax
-case class MLE(t: Syntax, u: Syntax) extends Syntax
-case class MIf(t: Syntax, u: Syntax, v: Syntax) extends Syntax
-case class MLet(t: Syntax, u: Syntax) extends Syntax
-case class MVar(t: String) extends Syntax
+case class MAdd(t: Any, u: Any) extends T
+case class MFAdd(t: T, u: T) extends T
 
-case class MLetRec(t:String) extends Syntax
+case class MSub(t: T, u: T) extends T
+case class MFSub(t: T, u: T) extends T
 
-case class MApp(t: List[List[Syntax]]) extends Syntax
-case class MTuple(t: List[Syntax]) extends Syntax
+case class MFMul(t: T, u: T) extends T
+case class MFDiv(t: T, u: T) extends T
 
-case class MLetTuple(value:String) extends Syntax
 
-case class MArray(left: Syntax, right: Syntax) extends Syntax
-case class MGet(left: Syntax, right: Syntax) extends Syntax
-case class MPut(left: Syntax, center: Syntax, right: Syntax) extends Syntax
+case class MEq(t: T, u: T) extends T
+case class MLE(t: T, u: T) extends T
+case class MIf(t: T, u: T, v: T) extends T
+case class MLet(a: T, b: T, c:T) extends T
+case class MVar(t: String) extends T
+case class MLetRec(a:MFundef, b:T) extends T
 
-case class MFundef(value:String) extends Syntax
+case class MApp(t: T, l:List[T]) extends T
+case class MTuple(t: List[T]) extends T
+
+case class MLetTuple(a:List[T], b:T, c:T) extends T
+
+case class MArray(left: T, right: T) extends T
+case class MGet(left: T, right: T) extends T
+case class MPut(left: T, center: T, right: T) extends T
+
+case class MFundef(l:List[T], t:T) extends T
 
 
 

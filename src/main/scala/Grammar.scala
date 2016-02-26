@@ -14,8 +14,8 @@ object Grammar {
 class Grammar extends JavaTokenParsers with PackratParsers {
   override def skipWhitespace = false
 
-  /*
-  def r1chain[T, U](p: Parser[T], q: Parser[U])(combiner: (T, U) => T): Parser[T] =  p ~ rep(q) ^^ {
+
+ def r1chain[T, U](p: Parser[T], q: Parser[U])(combiner: (T, U) => T): Parser[T] =  p ~ rep(q) ^^ {
     case x ~ xs => xs.foldLeft(x){ case (a, b) => combiner(a, b) }
   }
   def right_chain[T, U](p: => Parser[T], q: => Parser[(T, U) => U], combine: (T, U) => U, first: U): Parser[U] =
@@ -23,8 +23,8 @@ class Grammar extends JavaTokenParsers with PackratParsers {
     case x ~ xs => (new ~(combine, x) :: xs).foldRight(first){(_, _) match {case (f ~ a, b) => f(a, b)}}
   }
   //def cons = (x: String, y: List[Any]) => x :: y
-  def hoge: Parser[Any] = chainr1("1", "|"^^{_ => (l:String, r:Any) => (l,r, "hoo")}, (l:String, r:Any) => List(l,r), "first")
-*/
+  def hoge: Parser[Any] = chainr1("1", "|" ^^ { _ => (l:String, r:java.io.Serializable) => (l,r)}, (l:String, r:java.io.Serializable) => (l, r), List())
+
 
   lazy val File : PackratParser[Any] =
     Expression ~ chainl1(Expression, WS ^^ { _  => (l:Any, r:Any) => (l, r)})
@@ -49,6 +49,7 @@ class Grammar extends JavaTokenParsers with PackratParsers {
 
   lazy val Dot: PackratParser[String] = anySpace ~> "."
   lazy val Comma: PackratParser[String] = anySpace ~> ","
+  lazy val SemiColon: PackratParser[String] = anySpace ~> ";"
 
   lazy val Less: PackratParser[String] = anySpace ~> "<"
   lazy val Greater :PackratParser[String] = anySpace ~> ">"
@@ -60,6 +61,8 @@ class Grammar extends JavaTokenParsers with PackratParsers {
   lazy val True :PackratParser[String] = anySpace ~> "true"
   lazy val False:PackratParser[String] = anySpace ~> "false"
 
+  lazy val Not :PackratParser[String] = anySpace ~> "not"
+
   lazy val If :PackratParser[String] = anySpace ~> "if"
   lazy val Then :PackratParser[String] = anySpace ~> "then"
   lazy val Else :PackratParser[String] = anySpace ~> "else"
@@ -67,107 +70,286 @@ class Grammar extends JavaTokenParsers with PackratParsers {
   lazy val Let :PackratParser[String] = anySpace ~> "let"
   lazy val In :PackratParser[String] = anySpace ~> "in"
   lazy val Rec :PackratParser[String] = anySpace ~> "rec"
+  lazy val And :PackratParser[String] = anySpace ~> "and"
   lazy val ArrayCreate :PackratParser[String] = anySpace ~> "Array.create"
 
-  lazy val Expression : PackratParser[Any] =
-    CompoundExpression | EqualityExpression
+  lazy val addRelationalOperator: PackratParser[String] =
+    LessGreater | LessEqual | Less | GreaterEqual | Greater
 
-  lazy val CompoundExpression : PackratParser[Any] =
+  /*
+  // 10.1
+  lazy val statementList: PackratParser[Any] =
+    repsep(statement, SemiColon)
+
+  //12
+  lazy val statement: PackratParser[Any] =
+    repsep(statement1, SemiColon)
+
+  lazy val statement1: PackratParser[Any] =
+    assignmentStatement |
+    expressionStatement |
     IfExpression |
     RecursiveFunctionDeclaration |
     VariableDeclaration |
     LetTupleExpression |
     ArrayCreateExpression
 
-  lazy val IfExpression : PackratParser[Any] =
+
+  //12.2
+  lazy val expressionStatement: PackratParser[Any] =
+    expression
+
+  // 11.1
+  lazy val expression: PackratParser[Any] =
+  chainl1(notExpression, And ^^ {_ => (l:Any, r:Any) => List(l,r) })
+
+  lazy val notExpression: PackratParser[Any] =
+    keywordNotExpression |
+    methodInvocationWithoutParentheses |
+    operatorExpression
+
+  lazy val keywordNotExpression: PackratParser[Any] =
+    Not ~ notExpression
+
+  //
+  lazy val methodInvocationWithoutParentheses: Parser[String] = memo(
+    command
+
+  lazy val command: Parser[String] =
+      primaryExpression ~ not(LineTerminator) ~ (PERIOD | DoubleCOLON) ~ methodName ~ not(not(WS) ~ LPAREN) ~
+        argumentWithoutParentheses ^^ { case p~n1~c~m~n2~a => "command("+p+c+m+" "+a+")" }
+
+  // 11.4
+  lazy val operatorExpression: PackratParser[Any] =
+    assignmentExpression |
+
+
+  // 11.4.2 Assignments
+
+  lazy val assignmentExpression: Parser[String] =
+    singleAssignmentExpression |
+
+  lazy val assignmentStatement: Parser[String] =
+    singleAssignmentStatement |
+
+  // 11.4.2.2 Single assignments
+
+  lazy val singleAssignmentExpression: Parser[String] =
+    singleVariableAssignmentExpression |
+
+  lazy val singleAssignmentStatement: Parser[String] =
+    singleVariableAssignmentStatement |
+
+  // 11.4.2.2.2 Single variable assignments
+
+  lazy val singleVariableAssignmentStatement: Parser[String] =
+    variable ~ not(LineTerminator) ~ EQUAL ~ methodInvocationWithoutParentheses ^^ {
+      case v~n~e~m => "single-variable-st("+v+"="+m+")" }
+
+  lazy val singleVariableAssignmentExpression: Parser[String] =
+    variable ~ not(LineTerminator) ~ EQUAL ~ operatorExpression ^^ {
+      case v~n~e~o => "single-variable-ex("+v+"="+o+")" }
+
+
+  // 11.4.4 Binary operator expressions
+  lazy val equalityExpression: Parser[String] = memo(
+    relationalExpression ~ ??(relationalOperation)  ^^ { case e~r => e+r } )
+
+  lazy val relationalOperation: Parser[String] =
+     relationalOperator ~ relationalExpression ^^ { case n~o~e => o+e }
+
+  lazy val relationalOperator: Parser[String] =
+    LtEqGT | DoubleEQ | TripleEQ | NotEQ | EqTILDE | NotTILDE
+
+  lazy val relationalExpression: Parser[String] =
+    chainl1 ( additiveExpression, not(LineTerminator) ~ (GT | GtEQ | LT | LtEQ) ^^ {
+      case n~op => (l: String, r: String) => "("+ l+" "+op+" "+r +")" } )
+
+  lazy val additiveExpression: Parser[String] =
+    chainl1 ( multiplicativeExpression, not(LineTerminator) ~ (PLUS | MINUS) ^^ {
+      case n~op => (l: String, r: String) => "("+ l+" "+op+" "+r +")" } )
+
+  lazy val multiplicativeExpression: Parser[String] =
+    chainl1 ( unaryMinusExpression, not(LineTerminator) ~ (MULT | DIV | PERCENT) ^^ {
+      case n~op => (l: String, r:String) => "(" + l+op+r +")" })
+
+  // 11.4.3 Unary operator expressions
+  lazy val unaryMinusExpression: Parser[String] =
+    unaryExpression  |
+    MINUS ~ unaryExpression ^^ { case m~p => "-"+p }
+
+  lazy val unaryExpression: Parser[String] =
+    primaryExpression |
+    NotOP ~ unaryExpression ^^ { case n~u => "!"+u }
+
+  // 11.5 Primary expressions
+  lazy val primaryExpression: PackratParser[Any] =
+    rep(primaryExpression1)
+
+  lazy val primaryExpression1: PackratParser[Any] =
+    IfExpression |
+    RecursiveFunctionDeclaration |
+    VariableDeclaration |
+    LetTupleExpression |
+    ArrayCreateExpression
+
+*/
+  //########################################
+  lazy val Expression : PackratParser[T] =
+    //repsep(Statement, SemiColon)
+  Statement
+
+  lazy val Statement : PackratParser[T] =
+    IfExpression |
+    //RecursiveFunctionDeclaration |
+    VariableDeclaration |
+    LetTupleExpression |
+    ArrayCreateExpression |
+    EqualityExpression |
+    SimpleExpression
+
+  lazy val SimpleExpression: PackratParser[MBool] =
+    Bool //|
+  //     Number |
+  //   FLOAT ^^ {s => new MFloat(s.asInstanceOf[Float])} |
+  //   INT ^^ {s => new MInt(s.asInstanceOf[Int])} |
+  //     Ident | //^^ {s => new MVar(s)} |
+  //     LParen ~> Expression <~ RParen | //^^ {case l~e~r_ => e}
+  //     LParen ~> anySpace <~ RParen ^^ {_ => new MUnit()}
+
+  lazy val Bool: PackratParser[MBool] = (True | False) ^^ {s => new MBool(s.toBoolean)}
+  lazy val Number: PackratParser[String] = anySpace ~> wholeNumber
+  lazy val INT: PackratParser[String] = anySpace ~> wholeNumber
+  lazy val FLOAT: PackratParser[String] = anySpace ~> wholeNumber
+
+  lazy val Ident: PackratParser[MVar] =
+    not(Keyword) ~> LocalID ^^ {s => new MVar(s)}
+
+  lazy val Keyword: PackratParser[Any] =
+    KeywordString ~ not(IdentifierCharacter)
+
+  lazy val KeywordString : PackratParser[String] =
+    True | False | If | Then | Else | Let | In | Rec | ArrayCreate
+
+  lazy val IdentifierCharacter: PackratParser[String] = regex("""[a-zA-Z0-9_]""".r)
+
+  lazy val LocalID: PackratParser[String] =
+    anySpace ~> regex("""[a-z_][a-zA-Z0-9_]*""".r)
+
+  lazy val IfExpression : PackratParser[MIf] =
     If ~ Expression ~ Then ~ Expression ~ Else ~ Expression ^^ {
-      case i~ex1~t~ex2~e~ex3 => List(ex1, ex2, ex3)
+      case i ~ ex1 ~ t ~ ex2 ~ e ~ ex3 => new MIf(ex1, ex2, ex3)
     }
 
-  lazy val RecursiveFunctionDeclaration : PackratParser[Any] =
-    Let ~ Rec ~ Ident ~ FormalArgList ~ Equal ~ Ident ~ In ~ Expression ^^ {
-      case l~r~id1~f~eq~id2~i~exp => List(id1, f, id2, exp)
+  /*
+  // LET REC fundefs IN exp
+  lazy val RecursiveFunctionDeclaration : PackratParser[MLetRec] =
+    Let ~ Rec ~ Fundefs ~ In ~ Expression ^^ {
+      case lt ~ rc ~ fd ~ in ~ exp => new MLetRec(fd, exp)
     }
 
-  lazy val FormalArgList : PackratParser[Any] =
-    chainl1(Ident, WS ^^ { _  => (l:Any, r:Any) => (l, r)})
+  //fundefs:
+  //| fundef AND fundefs
+  //| fundef
+  lazy val Fundefs: PackratParser[List[T]] =
+    chainl1(Fundef, And ^^ { _  => (l:T, r:T) => List(l, r)})
 
-  lazy val VariableDeclaration : PackratParser[Any] =
+  //fundef:
+  //| IDENT formal_args EQUAL exp
+  lazy val Fundef: PackratParser[List] =
+    Ident ~ FormalArgList ~ Equal ~ Ident
+
+  lazy val FormalArgList : PackratParser[List[T]] =
+    chainl1(Ident, WS ^^ {
+      case op => (l:T, r:T) => List(l)++List(r)}
+    )
+*/
+  lazy val VariableDeclaration : PackratParser[MLet] =
     Let ~ Ident ~ Equal ~ Expression ~ In ~ Expression ^^ {
-      case l~id~e~exp1~i~exp2 => List(id, exp1, exp2)
+      case l~id~e~exp1~i~exp2 => new MLet(id, exp1, exp2)
     }
 
-  lazy val LetTupleExpression : PackratParser[Any] =
+  lazy val LetTupleExpression : PackratParser[MLetTuple] =
     Let ~ LParen ~ Pat ~ RParen ~ Equal ~ Expression ~ In ~ Expression  ^^ {
-      case l~lp~pat~rp~eq~exp1~i~exp2 => List(pat, exp1, exp2)
+      case l~lp~pat~rp~eq~exp1~i~exp2 => new MLetTuple(pat, exp1, exp2)
     }
 
-  lazy val Pat : PackratParser[Any] =
+  lazy val Pat : PackratParser[List[T]] =
     Ident ~ rep1(Comma ~> Ident) ^^ {case i~rep => i::rep}
 
-  //done
-  lazy val ArrayCreateExpression : PackratParser[Any] =
-    ArrayCreate ~ ReadArrayElementExpression ~ ReadArrayElementExpression ^^ {
-      case ac ~ re1 ~ re2 => List(re1, re2)
+  lazy val ArrayCreateExpression : PackratParser[MArray] =
+    ArrayCreate ~ Expression ~ Expression ^^ {
+      case ac ~ re1 ~ re2 => new MArray(re1, re2)
     }
 
-  lazy val EqualityExpression: PackratParser[Any] =
+  lazy val EqualityExpression: PackratParser[T] =
     chainl1( RelationalExpression, Equal ^^ {
-      case op => (l: Any, r: Any) => List(l, r) }
+      case op => (l: T, r: T) => new MEq(l,r)}
     )
 
-  lazy val RelationalExpression: PackratParser[Any] =
+  lazy val RelationalExpression: PackratParser[T] =
     chainl1( AdditiveExpression, addRelationalOperator ^^ {
-      case op => (l: Any, r: Any) => List(l, r) }
+      case op => (l: T, r: T) => new MAdd(l,r)}
     )
 
-  lazy val AdditiveExpression: PackratParser[Any] =
+  lazy val AdditiveExpression: PackratParser[T] =
     chainl1( MultiplicativeExpression, (FPlus | Plus | FMinus | Minus) ^^ {
-      case op => (l: Any, r: Any) => List(l, r)}
+      case op => (l: T, r: T) => new MFAdd(l,r)}
     )
 
-  lazy val MultiplicativeExpression: PackratParser[Any] =
+  lazy val MultiplicativeExpression: PackratParser[T] =
     chainl1( UnaryExpression, (FMul | Mul | FDiv | Div) ^^ {
-      op => (l: Any, r: Any) => List(l, r)}
+      case op => (l: T, r: T) => new MFMul(l,r)}
     )
 
-  lazy val UnaryExpression: PackratParser[Any] =
-    FunctionCall | (addUnaryOperator ~ UnaryExpression) ^^ { case op~exp => List(op, exp)}
+  lazy val UnaryExpression: PackratParser[T] =
+    FMinus ~ UnaryExpression ^^ { case op~exp => MFNeg(exp)} |
+    Minus ~ UnaryExpression ^^ { case op~exp => MNeg(exp)}
+    //applyFunction
 
-  lazy val addUnaryOperator: PackratParser[Any] =
-    FMinus| Minus //^^ {_ => "auo"}
+  /*
+  lazy val applyFunction: PackratParser[T] =
+    Expression ~ ActualArgList ^^ {case e~a => new MApp(e, a)}
 
-  lazy val addRelationalOperator: PackratParser[Any] =
-    (LessGreater | LessEqual | Less | GreaterEqual | Greater )
+  lazy val ActualArgList : PackratParser[List[T]] =
+    chainl1(SimpleExpression, whiteSpace ^^ {
+      op => (l:T, r:T) => l::List(r)}
+    )
+*/
 
-  lazy val FunctionCall: PackratParser[Any] =
+  lazy val ActualArgList : PackratParser[Any] =
+    chainl1("a"|"b"|"c", "." ^^ {
+     case op => (l:String, r:String) => l+"o"+r}
+    )
+  /*
+  lazy val FunctionCall: PackratParser[T] =
     WriteArrayElementExpression ~ opt(ActualArgList) ^^ {
       case w~opt => opt match {
-        case Some(o) => List(w, o)
+        case Some(o) => w:::o
         case None => w
       }
     }
 
-  lazy val ActualArgList : PackratParser[Any] =
+  lazy val ActualArgList : PackratParser[List[T]] =
     chainl1(WriteArrayElementExpression, whiteSpace ^^ {
-        op => (l:Any, r:Any) => List(l, r)}
+        op => (l:List[T], r:List[T]) => l:::r}
     )
 
-  lazy val WriteArrayElementExpression: PackratParser[Any] =
+  lazy val WriteArrayElementExpression: PackratParser[List[T]] =
     //ReadArrayElementExpression ~ opt(Dot ~ LParen ~ Expression ~ RParen ~ LessMinus ~ Expression) ^^ {
     ReadArrayElementExpression ~ opt(WriteArrayAccess) ^^ {
       case r~opt => opt match {
-        case Some(o) => List(r, o)
+        case Some(o) => r:::o
         case None => r
       }
     }
 
-  lazy val WriteArrayAccess: PackratParser[Any] =
+  lazy val WriteArrayAccess: PackratParser[List[T]] =
     Dot ~ LParen ~ Expression ~ RParen ~ LessMinus ~ Expression ^^ {
       case d~lp~e1~rp~lm~e2 => List(e1, e2)
     }
 
-  lazy val ReadArrayElementExpression: PackratParser[Any] =
+  lazy val ReadArrayElementExpression: PackratParser[T] =
     SimpleExpression ~ opt(rep1(ReadArrayAccess)) ^^ {
       case s ~ rep => rep match {
         case Some(o) => s::o
@@ -175,38 +357,11 @@ class Grammar extends JavaTokenParsers with PackratParsers {
       }
     }
 
-  lazy val ReadArrayAccess: PackratParser[Any] =
+  lazy val ReadArrayAccess: PackratParser[T] =
     Dot ~ LParen ~ Expression ~ RParen ~ not(LessMinus) ^^ {
       case d~lp~e~rp~n => e
     }
-
-  lazy val SimpleExpression: PackratParser[Any] =
-     Bool |
-     Number |
-//   FLOAT ^^ {s => new MFloat(s.asInstanceOf[Float])} |
-//   INT ^^ {s => new MInt(s.asInstanceOf[Int])} |
-     Ident | //^^ {s => new MVar(s)} |
-     LParen ~> Expression <~ RParen | //^^ {case l~e~r_ => e}
-     LParen ~> anySpace <~ RParen ^^ {_ => new MUnit()}
-
-  lazy val Bool: PackratParser[Any] = (True | False) ^^ {s => new MBool(s.toBoolean)}
-  lazy val Number: PackratParser[String] = anySpace ~> wholeNumber
-  lazy val INT: PackratParser[String] = anySpace ~> wholeNumber
-  lazy val FLOAT: PackratParser[String] = anySpace ~> wholeNumber
-
-  lazy val Ident: PackratParser[Any] =
-    not(Keyword) ~> LocalID ^^ {s => new MVar(s)}
-
-  lazy val Keyword: PackratParser[Any] =
-    KeywordString ~ not(IdentifierCharacter)
-
-  lazy val KeywordString : PackratParser[Any] =
-    True | False | If | Then | Else | Let | In | Rec | ArrayCreate
-
-  lazy val IdentifierCharacter: PackratParser[String] = regex("""[a-zA-Z0-9_]""".r)
-
-  lazy val LocalID: PackratParser[String] =
-    anySpace ~> regex("""[a-z_][a-zA-Z0-9_]*""".r)
+*/
 
  /*// AST CONSTRUCTION
  lazy val TPat =
@@ -219,10 +374,10 @@ class Grammar extends JavaTokenParsers with PackratParsers {
   lazy val hoge: PackratParser[String] = anySpace~>"hoge"
 */
   def parse = {
-   val res = parseAll(Expression, "let hoge = true in false" )
-
+   //val res = parseAll(hoge, "1|1|1|1" )
+   //val res = parseAll(Expression, "Array.create true false"  )
   //val res = parseAll(Expression, "false.(true).(false)" )
-  // val res = parseAll(Expression, "if false then true else false" )
+   val res = parseAll(Expression, "if false then true else false" )
     println(res)
   }
 
