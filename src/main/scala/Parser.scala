@@ -11,11 +11,8 @@ object Parser {
   }
 }
 
-class Parser extends Syntax with JavaTokenParsers with PackratParsers{
+class Parser extends Syntax with RegexParsers with PackratParsers{
   override def skipWhitespace = false
-
-  lazy val File : PackratParser[Any] =
-    Expression ~ chainl1(Expression, WS ^^ { _  => (l:Any, r:Any) => (l, r)})
 
   lazy val WS : PackratParser[Any] = rep(Blank)
   lazy val Blank = " " | "\n" | "\t" | "\r"
@@ -61,8 +58,12 @@ class Parser extends Syntax with JavaTokenParsers with PackratParsers{
   lazy val And :PackratParser[String] = anySpace ~> "and"
   lazy val ArrayCreate :PackratParser[String] = anySpace ~> "Array.create"
 
-  lazy val addRelationalOperator: PackratParser[String] =
-    LessGreater | LessEqual | Less | GreaterEqual | Greater
+  lazy val BOOL: PackratParser[Bool] = (True | False) ^^ {s => new Bool(s.toBoolean)}
+  lazy val INT: PackratParser[Int] = anySpace ~> regex("""[0-9]+""".r) ^^ {s => Int(s.toInt)}
+  lazy val FLOAT: PackratParser[Float] = anySpace ~> regex("""[0-9]+.[0-9]+""".r) ^^ {s => Float(s.toDouble)}
+
+  lazy val File : PackratParser[Any] =
+    Expression ~ chainl1(Expression, WS ^^ { _  => (l:Any, r:Any) => (l, r)})
 
   lazy val Expression : PackratParser[T] =
   //repsep(Statement, SemiColon)
@@ -70,38 +71,10 @@ class Parser extends Syntax with JavaTokenParsers with PackratParsers{
 
   lazy val CompaundExpression : PackratParser[T] =
     IfExpression |
-      RecursiveFunctionDeclaration |
-      VariableDeclaration |
-      LetTupleExpression |
-      ArrayCreateExpression
-
-  lazy val BOOL: PackratParser[Bool] = (True | False) ^^ {s => new Bool(s.toBoolean)}
-  lazy val Number: PackratParser[String] = anySpace ~> wholeNumber
-  lazy val INT: PackratParser[String] = anySpace ~> wholeNumber
-  lazy val FLOAT: PackratParser[String] = anySpace ~> wholeNumber
-
-  lazy val Ident: PackratParser[Id.T] =
-    not(Keyword) ~> LocalID ^^ {new Id.T(_)}
-
-  lazy val Keyword: PackratParser[Any] =
-    KeywordString ~ not(IdentifierCharacter)
-
-  lazy val KeywordString : PackratParser[String] =
-    True | False | IF | Then | Else | LET | In | Rec | ArrayCreate
-
-  lazy val IdentifierCharacter: PackratParser[String] = regex("""[a-zA-Z0-9_]""".r)
-
-  lazy val LocalID: PackratParser[String] =
-    anySpace ~> regex("""[a-z_][a-zA-Z0-9_]*""".r)
-
-  lazy val SimpleExpression: PackratParser[T] =
-      BOOL |
-      //     Number |
-      //   FLOAT ^^ {s => new MFloat(s.asInstanceOf[Float])} |
-      //   INT ^^ {s => new MInt(s.asInstanceOf[Int])} |
-      Ident ^^ {new Var(_)} |
-      LParen ~> Expression <~ RParen //|
-      //LParen ~> anySpace <~ RParen ^^ {new MUnit(_)}
+    RecursiveFunctionDeclaration |
+    VariableDeclaration |
+    LetTupleExpression |
+    ArrayCreateExpression
 
   lazy val IfExpression : PackratParser[If] =
     IF ~ Expression ~ Then ~ Expression ~ Else ~ Expression ^^ {
@@ -144,34 +117,37 @@ class Parser extends Syntax with JavaTokenParsers with PackratParsers{
 
   lazy val EqualityExpression: PackratParser[T] =
     chainl1( RelationalExpression, Equal ^^ {
-      case op => (l: T, r: T) => new Eq(l,r)}
+      case op => (l: T, r: T) => new Eq(l,r)
+      }
     )
 
   lazy val RelationalExpression: PackratParser[T] =
-    chainl1( AdditiveExpression, addRelationalOperator ^^ {
-      case op => (l: T, r: T) => new Add(l,r)}
+    chainl1( AdditiveExpression,
+      LessGreater ^^ {case op => (l: T, r: T) => new Not(Eq(l, r))} |
+      LessEqual ^^ {case op => (l: T, r: T) => new LE(l, r)} |
+      Less ^^ {case op => (l: T, r: T) => new Not(LE(r, l))} |
+      GreaterEqual ^^ {case op => (l: T, r: T) => new LE(r, l)} |
+      Greater ^^ {case op => (l: T, r: T) => new Not(LE(l, r))}
     )
 
   lazy val AdditiveExpression: PackratParser[T] =
-    chainl1( MultiplicativeExpression, (FPlus | Plus | FMinus | Minus) ^^ {
-      case FPlus => (l: T, r: T) => new FAdd(l,r)
-      case Plus => (l: T, r: T) => new Add(l,r)
-      case FMinus => (l: T, r: T) => new FSub(l,r)
-      case Minus => (l: T, r: T) => new Sub(l,r)
-      }
+    chainl1( MultiplicativeExpression,
+      FPlus ^^ {case op => (l: T, r: T) => new FAdd(l,r)} |
+      Plus ^^ {case op => (l: T, r: T) => new Add(l,r)} |
+      FMinus ^^ {case op => (l: T, r: T) => new FSub(l,r)} |
+      Minus ^^ {case op => (l: T, r: T) => new Sub(l,r)}
     )
 
   lazy val MultiplicativeExpression: PackratParser[T] =
-    chainl1( UnaryExpression, (FMUL | FDIV) ^^ {
-      case FMUL => (l: T, r: T) => new FMul(l,r)
-      case FDIV => (l: T, r: T) => new FDiv(l,r)
-      }
+    chainl1( UnaryExpression,
+      FMUL ^^ {case op => (l: T, r: T) => new FMul(l,r)} |
+      FDIV ^^ {case op => (l: T, r: T) => new FMul(l,r)}
     )
 
   lazy val UnaryExpression: PackratParser[T] =
     FunctionCall |
-      FMinus ~ UnaryExpression ^^ { case op~exp => FNeg(exp)} |
-      Minus ~ UnaryExpression ^^ { case op~exp => Neg(exp)}
+    FMinus ~ UnaryExpression ^^ { case op~exp => FNeg(exp)} |
+    Minus ~ UnaryExpression ^^ { case op~exp => Neg(exp)}
 
   lazy val FunctionCall: PackratParser[T] =
     WriteArrayElementExpression ~ opt(ActualArgList) ^^ {
@@ -205,17 +181,41 @@ class Parser extends Syntax with JavaTokenParsers with PackratParsers{
       }
     }
 
+  lazy val SimpleExpression: PackratParser[T] =
+    BOOL |
+    FLOAT |
+    INT |
+    Ident ^^ {new Var(_)} |
+    LParen ~> Expression <~ RParen |
+    LParen ~> anySpace <~ RParen ^^ {_ => Unit()}
+
+  lazy val Ident: PackratParser[Id.T] =
+    not(Keyword) ~> LocalID ^^ {new Id.T(_)}
+
+  lazy val Keyword: PackratParser[Any] =
+    KeywordString ~ not(IdentifierCharacter)
+
+  lazy val KeywordString : PackratParser[String] =
+    True | False | IF | Then | Else | LET | In | Rec | ArrayCreate
+
+  lazy val IdentifierCharacter: PackratParser[String] = regex("""[a-zA-Z0-9_]""".r)
+
+  lazy val LocalID: PackratParser[String] =
+    anySpace ~> regex("""[a-z_][a-zA-Z0-9_]*""".r)
+
   lazy val ReadArrayAccess: PackratParser[T] =
     Dot ~ LParen ~ Expression ~ RParen ~ not(LessMinus) ^^ {
       case d~lp~e~rp~n => e
     }
 
+
   def parse = {
+    //val res = parseAll(Expression, "let hoge = 1.2 in true")
     //val res = parseAll(LetTupleExpression, "let (hoge1 , hage1  ,hoge2, hage2) = true in false" )
-    val res = parseAll(Expression, "let rec bar hoge1  hage1 = true in false" )
+    val res = parseAll(Expression, "let rec bar hoge1  hage1 = 2 in false" )
     //val res = parseAll(FunctionCall, "true.(false)<-false true.(false)<-false"  )
     //val res = parseAll(Expression, "false.(true).(false)" )
-    //val res = parseAll(Expression, "if false then true else false" )
+    //val res = parseAll(Expression, "if false then 2 else 3.8" )
     //val res = parseAll(VariableDeclaration, "let fdsfalse = false in true" )
     //val res = parseAll(RecursiveFunctionDeclaration, "let rec va fdsfalse rue dfas = true and va fdsfalse rue dfas = true in false" )
     println(res)

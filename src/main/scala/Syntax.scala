@@ -7,8 +7,8 @@ class Syntax {
   sealed class T()
   case class Unit() extends T
   case class Bool(t: Boolean) extends T
-  case class Int(t: Int) extends T
-  case class Float(t: Float) extends T
+  case class Int(t: scala.Int) extends T
+  case class Float(t: Double) extends T
   case class Not(t: T) extends T
   case class Neg(t: T) extends T
   case class FNeg(t: T) extends T
