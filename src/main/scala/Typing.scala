@@ -104,6 +104,10 @@ class Typing extends Syntax {
   }
 
   def occur(r1:Option[Type.T])(r2:Type.T):Boolean = {
+    println("r1")
+    println(r1)
+    println("r2")
+    println(r2)
     r2 match {
       case Type.Fun(ts, t) => ts.exists(occur(r1)) || occur(r1)(t)
       case Type.Tuple(ts) => ts.exists(occur(r1))
@@ -121,6 +125,7 @@ class Typing extends Syntax {
   }
 
   def unify(t:(Type.T, Type.T)):scala.Unit = {
+    println("unify")
 println(t)
     t  match {
       case (Type.Unit(), Type.Unit()) |
@@ -150,10 +155,12 @@ println(t)
 
       //var, _
       case (r@Type.Var(r1@t1), t2) =>
+        println("varr")
         t1 match {
           case Some(s) => unify(s, t2)
           case None =>
-            if (occur(r1)(t2)) throw Unify(t)
+            if (occur(r1)(t2)) {println("oc");throw Unify(t)}
+            println("noc")
             r.a = Some(t2)
         }
       //_, var
@@ -162,6 +169,7 @@ println(t)
           case Some(s) => unify(t1, s)
           case None =>
             if (occur(r2)(t1)) throw Unify(t)
+
             r.a = Some(t1)
         }
 
@@ -232,12 +240,14 @@ println(t)
           }
 
         case LetRec(fundefs, e2) =>
+println("letrec")
 
           val ev = env ++ fundefs.map((fd: Fundef) => fd.name)
           println(ev)
           fundefs.map(
             fd => unify(fd.name._2, Type.Fun(fd.args.map(ag => ag._2), g(ev ++ fd.args)(fd.body)))
           )
+          println("letrec")
           g(ev)(e2)
 
         case App(e: T, es) =>
@@ -269,7 +279,7 @@ println(t)
           Type.Unit()
       }
     } catch {
-      case Unify((t1, t2)) => println(t1, t2); throw new Error
+      case Unify((t1, t2)) => println(t1, t2); println("throw err");Type.Unit()//throw new Error
 
     }
   }
