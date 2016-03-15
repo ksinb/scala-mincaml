@@ -1,10 +1,9 @@
-/**
-  * Created by Help Desk on 2016/02/05.
-  */
-package  scala_mincaml
+package mincaml
+
+object Syntax extends Syntax
 
 class Syntax {
-  sealed class T()
+  sealed abstract class T()
   case class Unit() extends T
   case class Bool(t: Boolean) extends T
   case class Int(t: scala.Int) extends T
@@ -29,8 +28,6 @@ class Syntax {
   case class Var(b: Id.T) extends T
 
   case class LetRec(fundefs:List[Fundef], t:T) extends T
-
-
   case class App(t: T, l: List[T]) extends T
   case class Tuple(t: List[T]) extends T
   case class LetTuple(a: List[(Id.T, Type.T)], b: T, c: T) extends T

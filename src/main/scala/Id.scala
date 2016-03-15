@@ -1,15 +1,13 @@
-/**
-  * Created by Help Desk on 2016/02/08.
-  */
-package  scala_mincaml
+package mincaml
+
 object Id {
   type T = String// 変数の名前
   type L = String// トップレベル関数やグローバル配列のラベル
 
   def pp_list(x:List[T]):String = x match {
     case List() => ""
-    case List(x) => x
-    case x :: xs => x + " " + pp_list(xs)
+    case List(y) => y
+    case y :: ys => y+ " " + pp_list(ys)
   }
 
   var counter = 0
@@ -31,8 +29,9 @@ object Id {
 
   def gentmp(tp:Type.T):T = {
     counter += 1
-    var rc = "T" + id_of_typ(tp) + counter
+    val rc = "T" + id_of_typ(tp) + counter
     println("gentmp rc=" + rc)
     rc
   }
 }
+

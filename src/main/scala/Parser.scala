@@ -1,13 +1,9 @@
-/**
-  * Created by Help Desk on 2016/02/04.
-  */
-package scala_mincaml
-
+package mincaml
 import scala.util.parsing.combinator._
 
 object Parser {
   def main(args: Array[String]) = {
-    new Parser().parse
+    new Parser().parse()
   }
 }
 
@@ -73,6 +69,7 @@ class Parser extends Syntax with RegexParsers with PackratParsers{
     IfExpression |
     RecursiveFunctionDeclaration |
     VariableDeclaration |
+    //TupleExpression |
     LetTupleExpression |
     ArrayCreateExpression
 
@@ -95,12 +92,15 @@ class Parser extends Syntax with RegexParsers with PackratParsers{
     }
 
   lazy val FormalArgList : PackratParser[List[(Id.T, Type.T)]] =
-    repsep(Ident ^^ {addtyp(_)}, WS) ^^ {List() ++ _}
+    repsep(Ident ^^ addtyp, WS) ^^ {List() ++ _}
 
   lazy val VariableDeclaration : PackratParser[Let] =
     LET ~ Ident ~ Equal ~ Expression ~ In ~ Expression ^^ {
       case l~id~e~exp1~i~exp2 => new Let(addtyp(id), exp1, exp2)
     }
+
+  lazy val Elements : PackratParser[List[T]] =
+    rep1sep(Expression, Comma) ^^ {List() ++ _}
 
   lazy val LetTupleExpression : PackratParser[LetTuple] =
     LET ~ LParen ~ Pat ~ RParen ~ Equal ~ Expression ~ In ~ Expression  ^^ {
@@ -108,7 +108,7 @@ class Parser extends Syntax with RegexParsers with PackratParsers{
     }
 
   lazy val Pat : PackratParser[List[(Id.T, Type.T)]] =
-    rep1sep(Ident ^^ {addtyp(_)} , Comma) ^^ {List() ++ _}
+    rep1sep(Ident ^^ addtyp , Comma) ^^ {List() ++ _}
 
   lazy val ArrayCreateExpression : PackratParser[Array] =
     ArrayCreate ~ Expression ~ Expression ^^ {
@@ -209,12 +209,13 @@ class Parser extends Syntax with RegexParsers with PackratParsers{
     }
 
 
-  def parse = {
+  def parse() = {
+    val res = parseAll(Pat, "apple, ho, bananana, kiwi, orange")
     //val res = parseAll(Expression, "let hoge = 1.2 in true")
-    //val res = parseAll(LetTupleExpression, "let (hoge1 , hage1  ,hoge2, hage2) = true in false" )
-    val res = parseAll(Expression, "let rec bar hoge1  hage1 = 2 in false" )
+    //val res = parseAll(Expression, "let (hoge1 , hage1  ,hoge2, hage2) = true in false" )
+    //val res = parseAll(Expression, "let rec fname arg1 arg2 = 2 in false" )
     //val res = parseAll(FunctionCall, "true.(false)<-false true.(false)<-false"  )
-    //val res = parseAll(Expression, "false.(true).(false)" )
+    //val res = parseAll(Expression, "hoge.(1)" )
     //val res = parseAll(Expression, "if false then 2 else 3.8" )
     //val res = parseAll(VariableDeclaration, "let fdsfalse = false in true" )
     //val res = parseAll(RecursiveFunctionDeclaration, "let rec va fdsfalse rue dfas = true and va fdsfalse rue dfas = true in false" )
