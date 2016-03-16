@@ -54,7 +54,7 @@ class Parser extends Syntax with RegexParsers with PackratParsers{
   lazy val And :PackratParser[String] = anySpace ~> "and"
   lazy val ArrayCreate :PackratParser[String] = anySpace ~> "Array.create"
 
-  lazy val BOOL: PackratParser[Bool] = (True | False) ^^ {s => new Bool(s.toBoolean)}
+  lazy val BOOL: PackratParser[Bool] = (True | False) ^^ {s => Bool(s.toBoolean)}
   lazy val INT: PackratParser[Int] = anySpace ~> regex("""[0-9]+""".r) ^^ {s => Int(s.toInt)}
   lazy val FLOAT: PackratParser[Float] = anySpace ~> regex("""[0-9]+.[0-9]+""".r) ^^ {s => Float(s.toDouble)}
 
@@ -210,10 +210,12 @@ class Parser extends Syntax with RegexParsers with PackratParsers{
 
 
   def parse() = {
-    val res = parseAll(Pat, "apple, ho, bananana, kiwi, orange")
+    //val res = parseAll(Expression, "lambda 2.0 1.0")
+
+    //val res = parseAll(Pat, "apple, ho, bananana, kiwi, orange")
     //val res = parseAll(Expression, "let hoge = 1.2 in true")
     //val res = parseAll(Expression, "let (hoge1 , hage1  ,hoge2, hage2) = true in false" )
-    //val res = parseAll(Expression, "let rec fname arg1 arg2 = 2 in false" )
+    val res = parseAll(Expression, "let rec fname arg1 arg2 = arg1 + arg2 in fname 1.1 2.2" )
     //val res = parseAll(FunctionCall, "true.(false)<-false true.(false)<-false"  )
     //val res = parseAll(Expression, "hoge.(1)" )
     //val res = parseAll(Expression, "if false then 2 else 3.8" )

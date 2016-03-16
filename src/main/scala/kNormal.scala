@@ -1,5 +1,19 @@
 package mincaml
 
+object kNormal {
+  def main(args: Array[String]) = {
+
+    val env = Map[Id.T, Type.T]("lambda"->Type.Int())
+    //val hoge = Syntax.Add(Syntax.Float(123.0),Syntax.Float(456.0))
+    //val hoge = Syntax.Not(Syntax.Bool(false))
+    //val hoge = Syntax.Var("lambda")
+    val hoge = Syntax.App(Syntax.Var("lambda"),List(Syntax.Float(2.0), Syntax.Float(1.0)))
+    val kn = new kNormal()
+    println(kn.g(env, hoge))
+  }
+}
+
+
 class kNormal {
   sealed abstract class T()
   case class Unit() extends T
@@ -7,23 +21,23 @@ class kNormal {
   case class Float(double: Double) extends T
   case class Neg(t:Id.T) extends T
   case class Add(a:Id.T, b:Id.T) extends T
-  case class Sub() extends T
-  case class FNeg() extends T
-  case class FAdd() extends T
-  case class FSub() extends T
-  case class FMul() extends T
-  case class FDiv() extends T
+  case class Sub(a:Id.T, b:Id.T) extends T
+  case class FNeg(t:Id.T) extends T
+  case class FAdd(a:Id.T, b:Id.T) extends T
+  case class FSub(a:Id.T, b:Id.T) extends T
+  case class FMul(a:Id.T, b:Id.T) extends T
+  case class FDiv(a:Id.T, b:Id.T) extends T
   case class IfEq() extends T
   case class IfLE() extends T
   case class Let(t1:(Id.T, Type.T), t2:T, t3:T ) extends T
   case class Var(t:Id.T) extends T
   case class LetRec() extends T
-  case class App() extends T
+  case class App(t:Id.T, ts:List[Id.T]) extends T
   case class Tuple() extends T
   case class LetTuple() extends T
   case class Get() extends T
   case class Put() extends T
-  case class ExtArray() extends T
+  case class ExtArray(t:Id.T) extends T
   case class ExtFunApp() extends T
   case class fundef() extends T
 
@@ -37,20 +51,105 @@ class kNormal {
     }
   }
 
-  def g(env:Any, t:Syntax.T):(T, Type.T) = {
-    t match {
+  def g(env:Map[Id.T, Type.T], t0:Syntax.T):(T, Type.T) = {
+    println(env)
+    println(t0)
+    t0 match {
       case Syntax.Unit() => (Unit(), Type.Unit())
       //case Syntax.Bool(b) => Int(1)
       case Syntax.Int(i) => (Int(i), Type.Int())
       case Syntax.Float(d) => (Float(d), Type.Float())
-      case Syntax.Not(e) =>
-        g(env, Syntax.If(e, Syntax.Bool(false), Syntax.Bool(true)))
-      case Syntax.Neg(e) =>
-        insert_let(g(env, e), (x: Id.T) => (Neg(x), Type.Int()))
+      case Syntax.Not(e)
+        => g(env, Syntax.If(e, Syntax.Bool(false), Syntax.Bool(true)))
+      case Syntax.Neg(e)
+        => insert_let(g(env, e), (x: Id.T) => (Neg(x), Type.Int()))
       case Syntax.Add(e1, e2) =>
         insert_let(g(env, e1),
           (x: Id.T) => insert_let(g(env, e2),
             (y:Id.T) => (Add(x, y), Type.Int())))
+      case Syntax.Sub(e1, e2) =>
+        insert_let(g(env, e1),
+          (x: Id.T) => insert_let(g(env, e2),
+            (y:Id.T) => (Sub(x, y), Type.Int())))
+
+      case Syntax.FNeg(e)
+        => insert_let(g(env, e), (x:Id.T) => (FNeg(x), Type.Float()))
+      case Syntax.FAdd(e1, e2) =>
+        insert_let(g(env, e1),
+          (x: Id.T) => insert_let(g(env, e2),
+            (y:Id.T) => (FAdd(x, y), Type.Float())))
+      case Syntax.FSub(e1, e2) =>
+        insert_let(g(env, e1),
+          (x: Id.T) => insert_let(g(env, e2),
+            (y:Id.T) => (FSub(x, y), Type.Float())))
+      case Syntax.FMul(e1, e2) =>
+        insert_let(g(env, e1),
+          (x: Id.T) => insert_let(g(env, e2),
+            (y:Id.T) => (FMul(x, y), Type.Float())))
+      case Syntax.FDiv(e1, e2) =>
+        insert_let(g(env, e1),
+          (x: Id.T) => insert_let(g(env, e2),
+            (y:Id.T) => (FDiv(x, y), Type.Float())))
+
+      case cmp@(Syntax.Eq(_, _) | Syntax.NEq(_, _) | Syntax.Lt(_, _) | Syntax.LE(_, _))
+        => g(env, Syntax.If(cmp ,Syntax.Bool(true), Syntax.Bool(false)))
+
+      case Syntax.If(Syntax.Not(e1), e2, e3)
+        => g(env, Syntax.If(e1, e3, e2))
+
+      //case Syntax.If(Syntax.Eq(e1, e2), e3, e4)
+//        => g(env, Syntax.If(e1, e3, e2))
+
+      case Syntax.If(Syntax.NEq(e1, e2), e3, e4)
+        => g(env, Syntax.If(Syntax.Eq(e1, e2), e4, e3))
+
+      case Syntax.If(Syntax.Lt(e1, e2), e3, e4)
+        => g(env, Syntax.If(Syntax.LE(e2, e1), e4, e3))
+
+      //case Syntax.If(Syntax.LE(e1, e2), e3, e4)
+//        => g(env, Syntax.If(Syntax.LE(e2, e1), e4, e3))
+
+      case Syntax.If(e1, e2, e3)
+        => g(env, Syntax.If(Syntax.NEq(e1, Syntax.Bool(false)), e2, e3))
+
+      case Syntax.Let((x, t), e1, e2) =>
+        val (e1p, t1) = g(env, e1)
+        val (e2p, t2) = g(env + (x -> t), e2)
+        (Let((x, t), e1p, e2p), t2)
+
+      case Syntax.Var(x) if env.contains(x)
+        => (Var(x), env(x))
+
+      case Syntax.Var(x) =>
+        Typing.extenv(x) match {
+          case t@Type.Array(_) => (ExtArray(x), t)
+          case _ => println("not in extenv");throw new Exception();
+        }
+
+      //case Syntax.App(Syntax.Var(f), e2s) if (!env.contains(f))
+//        =>
+
+      case Syntax.App(e1, e1s) =>
+        val hoge = g(env, e1)
+        println("hoge");println(hoge)
+        hoge match {
+          case et1@(e1p, Type.Fun(_, t)) =>
+            insert_let(
+              et1,
+              (f: Id.T) => {
+                def bind(xs:List[Id.T], arg:List[Syntax.T]):(T, Type.T) = {
+                  arg match {
+                    case List() => (App(f, xs), t)
+                    case e2::e2s => insert_let(g(env, e2),
+                      (x:Id.T) => bind(xs:::List(x), e2s)
+                    )
+                  }
+                }
+                bind(List(), e1s)
+              }
+            )
+          case _ => println("App Error");throw new Exception()
+        }
     }
   }
 }

@@ -1,11 +1,16 @@
 package mincaml
 
 object Typing {
+
+  var extenv = Map[Id.T, Type.T]("lambda"->Type.Int())
+
   def main(args: Array[String]) = {
     val res = new Typing()
     //println(res.extenv)
     println(res.test())
     //println(res.extenv)
+
+
   }
 }
 
@@ -16,13 +21,11 @@ class Typing extends Syntax {
   var extenv = Map.empty[Id.T, Type.T]
 
   def test() = {
-    //g(Map())(Bool(false))
-
-
-    //g(Map())(If(new MBool(false), new Bool(true), new Int(42)))
-    //g(Map())(Let(("x", Type.Var(None)), Int(1), Add(Int(1), Int(3))))
-    //g(Map("vad"->Type.Int()))(MVar("va"))
-/*
+    val hoge =  LetRec(
+      List(Fundef(("fname",Type.Var(None)),List(("arg1",Type.Var(None)), ("arg2",Type.Var(None))),FAdd(Var("arg1"),Var("arg2")))),
+      App(Var("fname"),List(Float(1.1), Float(2.2)))
+    )
+    /*
     var  hoge =
       LetRec(
         List( Fundef(("bar",Type.Var(None)), List(("hoge1",Type.Float()),("hage1",Type.Float())), Bool(true))),
@@ -40,7 +43,7 @@ class Typing extends Syntax {
         ),
         Bool(false)
       )
-*/
+    */
     //val hoge = Tuple(List(Var("pple"), Int(2), Var("bananana"), Var("kiwi"), Var("orange")))
 
     /*
@@ -50,12 +53,11 @@ class Typing extends Syntax {
       Bool(false)
     )
     */
-    val hoge = Get(Var("hoge"),Int(1))
+    //val hoge = Get(Var("hoge"),Int(1))
     //var hoge = If(Bool(false),Bool(true),Bool(false))
-    //var hog = Map("vad"->Type.Int()) ++ hoge.fundef.map((fun:Fundef)=>fun.name)
-    //var hog = g( Map("vad"->Type.Int()) )( hoge )
-
-    println(hoge)
+    //var hoge = Map("vad"->Type.Int()) ++ hoge.fundef.map((fun:Fundef)=>fun.name)
+    //var hoge = g( Map("vad"->Type.Int()) )( hoge )
+    //val hoge = App(Var("lambda"), List(Float(2.0), Float(1.0)))
     f(hoge)
   }
 
@@ -109,10 +111,9 @@ class Typing extends Syntax {
   }
 
   def occur(r1:Option[Type.T])(r2:Type.T):Boolean = {
-println("r1")
-println(r1)
-println("r2")
-println(r2)
+println("r1",r1)
+println("r2", r2)
+
     r2 match {
       case Type.Fun(ts, t) => ts.exists(occur(r1)) || occur(r1)(t)
       case Type.Tuple(ts) => ts.exists(occur(r1))
@@ -130,8 +131,8 @@ println(r2)
   }
 
   def unify(t:(Type.T, Type.T)):scala.Unit = {
-println("unify")
-println(t)
+println("unify", t)
+
     t  match {
       case (Type.Unit(), Type.Unit()) |
            (Type.Bool(), Type.Bool()) |
@@ -164,8 +165,9 @@ println("varr")
         t1 match {
           case Some(s) => unify(s, t2)
           case None =>
-            if (occur(r1)(t2)) {println("oc");throw Unify(t)}
-            println("noc")
+            println("oc start", r1, t2)
+            if (occur(r1)(t2)) {println("oc found");throw Unify(t)}
+            println("oc end")
             r.a = Some(t2)
         }
       //_, var
@@ -174,7 +176,6 @@ println("varr")
           case Some(s) => unify(t1, s)
           case None =>
             if (occur(r2)(t1)) throw Unify(t)
-
             r.a = Some(t1)
         }
 
@@ -184,7 +185,7 @@ println("varr")
   }
 
   def g(env:Map[Id.T, Type.T])(e:T):Type.T = {
-
+println("function g")
 println(e)
     try {
       e match {
@@ -237,11 +238,12 @@ println(e)
           g(env + (x -> t))(e2)
 
         case Var(x) =>
-          if (env.contains(x)) env(x)
-          else if (extenv.contains(x)) extenv(x)
+          if (env.contains(x)) {println("env found");env(x)}
+          else if (extenv.contains(x)) {println("extenv found");extenv(x)}
           else {
             val t = Type.gentyp()
             extenv = extenv + (x -> t)
+            println(extenv)
             t
           }
 
@@ -255,9 +257,12 @@ println(e)
           )
           g(ev)(e2)
 
-        case App(e: T, es) =>
+        case App(e1, es) =>
+          println("App found", e1, es)
           val t = Type.gentyp()
-          unify(g(env)(e), Type.Fun(es.map(g(env)), t))
+          val b = g(env)(e1)
+          println("b end", b)
+          unify(b, Type.Fun(es.map(g(env)), t))
           t
 
         case Tuple(es) =>
@@ -290,10 +295,9 @@ println(e)
   }
 
   def f(e:T) = {
-    extenv = Map.empty[Id.T, Type.T]
+    //extenv = Map.empty[Id.T, Type.T]
     println(g(extenv)(e))
-    println("extenv")
-    println(extenv)
+    println("extenv", extenv)
     //println(deref_typ(g(extenv)(e)))
 
     /*
