@@ -27,19 +27,19 @@ class kNormal {
   case class FSub(a:Id.T, b:Id.T) extends T
   case class FMul(a:Id.T, b:Id.T) extends T
   case class FDiv(a:Id.T, b:Id.T) extends T
-  case class IfEq() extends T
-  case class IfLE() extends T
-  case class Let(t1:(Id.T, Type.T), t2:T, t3:T ) extends T
+  case class IfEq(a:Id.T, b:Id.T, c:T, d:T) extends T
+  case class IfLE(a:Id.T, b:Id.T, c:T, d:T) extends T
+  case class Let(t1:(Id.T, Type.T), t2:T, t3:T) extends T
   case class Var(t:Id.T) extends T
-  case class LetRec() extends T
+  case class LetRec(fundefs:List[fundef], t:T) extends T
   case class App(t:Id.T, ts:List[Id.T]) extends T
-  case class Tuple() extends T
-  case class LetTuple() extends T
-  case class Get() extends T
-  case class Put() extends T
+  case class Tuple(ts:List[Id.T]) extends T
+  case class LetTuple(t:List[(Id.T, Type.T)], u:Id.T, v:T) extends T
+  case class Get(t:Id.T, u:Id.T) extends T
+  case class Put(t:Id.T, u:Id.T) extends T
   case class ExtArray(t:Id.T) extends T
-  case class ExtFunApp() extends T
-  case class fundef() extends T
+  case class ExtFunApp(t:Id.T) extends T
+  case class fundef(name:(Id.T, Type.T), args:List[(Id.T, Type.T)], body:T) extends T
 
   def insert_let(e0:(T, Type.T), k:Id.T=>(T, Type.T)):(T, Type.T) = {
     e0 match {
@@ -97,8 +97,15 @@ class kNormal {
       case Syntax.If(Syntax.Not(e1), e2, e3)
         => g(env, Syntax.If(e1, e3, e2))
 
-      //case Syntax.If(Syntax.Eq(e1, e2), e3, e4)
-//        => g(env, Syntax.If(e1, e3, e2))
+      case Syntax.If(Syntax.Eq(e1, e2), e3, e4) =>
+          insert_let(g(env, e1),
+            (x:Id.T) => insert_let(g(env, e2),
+              (y:Id.T) => {
+                val (e3p, t3) = g(env, e3)
+                val (e4p, _) = g(env, e4)
+                (IfEq(x, y, e3p, e4p), t3)}
+            )
+          )
 
       case Syntax.If(Syntax.NEq(e1, e2), e3, e4)
         => g(env, Syntax.If(Syntax.Eq(e1, e2), e4, e3))
@@ -106,8 +113,15 @@ class kNormal {
       case Syntax.If(Syntax.Lt(e1, e2), e3, e4)
         => g(env, Syntax.If(Syntax.LE(e2, e1), e4, e3))
 
-      //case Syntax.If(Syntax.LE(e1, e2), e3, e4)
-//        => g(env, Syntax.If(Syntax.LE(e2, e1), e4, e3))
+      case Syntax.If(Syntax.LE(e1, e2), e3, e4) =>
+        insert_let(g(env, e2),
+          (x:Id.T) => insert_let(g(env, e2),
+            (y:Id.T) => {
+              val (e3p, t3) = g(env, e3)
+              val (e4p, _) = g(env, e4)
+              (IfLE(x, y, e3p, e4p), t3)}
+          )
+        )
 
       case Syntax.If(e1, e2, e3)
         => g(env, Syntax.If(Syntax.NEq(e1, Syntax.Bool(false)), e2, e3))
@@ -126,6 +140,7 @@ class kNormal {
           case _ => println("not in extenv");throw new Exception();
         }
 
+      //case Syntax.LetRec()
       //case Syntax.App(Syntax.Var(f), e2s) if (!env.contains(f))
 //        =>
 
@@ -141,8 +156,7 @@ class kNormal {
                   arg match {
                     case List() => (App(f, xs), t)
                     case e2::e2s => insert_let(g(env, e2),
-                      (x:Id.T) => bind(xs:::List(x), e2s)
-                    )
+                      (x:Id.T) => bind(xs:::List(x), e2s))
                   }
                 }
                 bind(List(), e1s)
@@ -150,6 +164,19 @@ class kNormal {
             )
           case _ => println("App Error");throw new Exception()
         }
+
+      //case Syntax.Tuple()
+      case Syntax.LetTuple(xts, e1, e2) =>
+        insert_let(g(env, e1),
+          (y:Id.T) => {
+            val (e2p, t2) = g(env++xts, e2)
+            (LetTuple(xts, y, e2p), t2)
+          }
+        )
+
+      //case Syntax.Array()
+      //case Syntax.Get()
+      //case Syntax.Put()
     }
   }
 }
