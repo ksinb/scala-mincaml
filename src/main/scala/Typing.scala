@@ -99,9 +99,14 @@ class Typing extends Syntax {
       case FDiv(e1, e2) => FDiv(deref_term(e1), deref_term(e2))
       case If(e1, e2, e3) => If(deref_term(e1), deref_term(e2), deref_term(e3))
       case Let(xt, e1, e2) => Let(deref_id_typ(xt), deref_term(e1), deref_term(e2))
-      case LetRec(fundefs, e2) =>
+      case LetRec(Fundef(xt, yts, e1), e2) =>
         LetRec(
-          fundefs.map(x => Fundef(deref_id_typ(x.name), x.args.map(deref_id_typ), deref_term(x.body))),
+          //fundefs.map(x => Fundef(deref_id_typ(x.name), x.args.map(deref_id_typ), deref_term(x.body))),
+          Fundef(
+            deref_id_typ(xt),
+            yts.map((y)=>deref_id_typ(y)),
+            deref_term(e1)
+          ),
           deref_term(e2)
         )
       case App(e, es) => App(deref_term(e), es.map(deref_term))
@@ -250,14 +255,23 @@ println("[function g]", e)
             t
           }
 
-        case LetRec(fundefs, e2) =>
-          val ev = env ++ fundefs.map((fd: Fundef) => fd.name)
+        case LetRec(Fundef((x, t), yts, e1), e2) =>
+          val ev = env + (x->t)
+          unify(
+            t,
+            Type.Fun(yts.map((y) => y._2), g(ev++yts)(e1))
+          )
+          g(ev)(e2)
+
+          /*
           fundefs.foreach(
             fd => unify(
               fd.name._2,
-              Type.Fun(fd.args.map(ag => ag._2), g(ev ++ fd.args)(fd.body))
+              Type.Fun(fd.args.map(ag => ag._2),
+              g(ev ++ fd.args)(fd.body))
             )
           )
+          */
           g(ev)(e2)
 
         case App(e1, es) =>

@@ -36,7 +36,7 @@ class kNormal {
   case class IfLE(a:Id.T, b:Id.T, c:T, d:T) extends T
   case class Let(t1:(Id.T, Type.T), t2:T, t3:T) extends T
   case class Var(t:Id.T) extends T
-  case class LetRec(fundefs:List[fundef], t:T) extends T
+  case class LetRec(a:Fundef, t:T) extends T
   case class App(t:Id.T, ts:List[Id.T]) extends T
   case class Tuple(ts:List[Id.T]) extends T
   case class LetTuple(t:List[(Id.T, Type.T)], u:Id.T, v:T) extends T
@@ -44,7 +44,7 @@ class kNormal {
   case class Put(s:Id.T, t:Id.T, u:Id.T) extends T
   case class ExtArray(t:Id.T) extends T
   case class ExtFunApp(t:Id.T, ts:List[Id.T]) extends T
-  case class fundef(name:(Id.T, Type.T), args:List[(Id.T, Type.T)], body:T) extends T
+  case class Fundef(name:(Id.T, Type.T), args:List[(Id.T, Type.T)], body:T) extends T
 
   def f(e:Syntax.T):T = {
     val result = g(Map[Id.T, Type.T](), e)
@@ -153,16 +153,15 @@ class kNormal {
           case _ => println("not in extenv"); throw new Exception();
         }
 
-      case Syntax.LetRec(fundefs, e2) =>
-        val env1 = env ++ fundefs.map((fundef: Syntax.Fundef) => fundef.name)
+      case Syntax.LetRec(Syntax.Fundef((x, t), yts, e1), e2) =>
+        val env1 = env + (x->t)
         val (e2p, t2) = g(env1, e2)
+        val (e1p, t1) = g(env1 ++ yts, e1)
         (LetRec(
-          fundefs.map((fd: Syntax.Fundef) => {
-            val (e1p, _) = g(env1 ++ fd.args, fd.body)
-            fundef(fd.name, fd.args, e1p)
-          }),
+          Fundef((x,t), yts, e1p),
           e2p),
-          t2)
+          t2
+        )
 
       case Syntax.App(Syntax.Var(f), e1s) if !env.contains(f) =>
         Typing.extenv(f) match {

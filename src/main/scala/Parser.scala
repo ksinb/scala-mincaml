@@ -83,7 +83,7 @@ class Parser extends Syntax with RegexParsers with PackratParsers{
     }
 
   lazy val RecursiveFunctionDeclaration : PackratParser[LetRec] =
-    LET ~ Rec ~ Fundefs ~ In ~ Expression ^^ {
+    LET ~ Rec ~ FUNDEF ~ In ~ Expression ^^ {
       case lt ~ rc ~ fd ~ in ~ exp => LetRec(fd, exp)
     }
 
