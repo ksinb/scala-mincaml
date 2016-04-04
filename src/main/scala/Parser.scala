@@ -61,6 +61,10 @@ class Parser extends Syntax with RegexParsers with PackratParsers{
   lazy val File : PackratParser[Any] =
     Expression ~ chainl1(Expression, WS ^^ { _  => (l:Any, r:Any) => (l, r)})
 
+  lazy val Program : PackratParser[Any] =
+    repsep(Expression, SemiColon)
+
+
   lazy val Expression : PackratParser[T] =
   //repsep(Statement, SemiColon)
     CompaundExpression | EqualityExpression
@@ -211,11 +215,11 @@ class Parser extends Syntax with RegexParsers with PackratParsers{
 
   def parse() = {
     //val res = parseAll(Expression, "lambda 2.0 1.0")
-
+    val res = parseAll(Expression, "let a = 1 in let b = 2 in let c = 3 in let d = 4 in  a + b + c -d" )
     //val res = parseAll(Pat, "apple, ho, bananana, kiwi, orange")
     //val res = parseAll(Expression, "let hoge = 1.2 in true")
     //val res = parseAll(Expression, "let (hoge1 , hage1  ,hoge2, hage2) = true in false" )
-    val res = parseAll(Expression, "let rec fname arg1 arg2 = arg1 + arg2 in fname 1.1 2.2" )
+    //val res = parseAll(Expression, "let rec fname arg1 arg2 = arg1 + arg2 in fname 1.1 2.2" )
     //val res = parseAll(FunctionCall, "true.(false)<-false true.(false)<-false"  )
     //val res = parseAll(Expression, "hoge.(1)" )
     //val res = parseAll(Expression, "if false then 2 else 3.8" )

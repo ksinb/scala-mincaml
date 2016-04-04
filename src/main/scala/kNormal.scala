@@ -7,9 +7,14 @@ object kNormal {
     //val hoge = Syntax.Add(Syntax.Float(123.0),Syntax.Float(456.0))
     //val hoge = Syntax.Not(Syntax.Bool(false))
     //val hoge = Syntax.Var("lambda")
-    val hoge = Syntax.App(Syntax.Var("lambda"),List(Syntax.Float(2.0), Syntax.Float(1.0)))
+    //val hoge = Syntax.App(Syntax.Var("lambda"),List(Syntax.Float(2.0), Syntax.Float(1.0)))
+    val hoge = Syntax.Let(("a",Type.Int()),Syntax.Int(1),
+      Syntax.Let(("b",Type.Int()),Syntax.Int(2),
+        Syntax.Let(("c",Type.Int()),Syntax.Int(3),
+          Syntax.Let(("d",Type.Int()),Syntax.Int(4),Syntax.Sub(Syntax.Add(Syntax.Add(Syntax.Var("a"),Syntax.Var("b")),Syntax.Var("c")),Syntax.Var("d"))))))
+
     val kn = new kNormal()
-    println(kn.g(env, hoge))
+    println(kn.f(hoge))
   }
 }
 
@@ -40,6 +45,12 @@ class kNormal {
   case class ExtArray(t:Id.T) extends T
   case class ExtFunApp(t:Id.T, ts:List[Id.T]) extends T
   case class fundef(name:(Id.T, Type.T), args:List[(Id.T, Type.T)], body:T) extends T
+
+  def f(e:Syntax.T):T = {
+    val result = g(Map[Id.T, Type.T](), e)
+    println("res:", result)
+    result._1
+  }
 
   def insert_let(e0:(T, Type.T), k:Id.T=>(T, Type.T)):(T, Type.T) = {
     e0 match {
@@ -243,6 +254,7 @@ class kNormal {
                 )
               }
             )
+          case _ =>  throw new Exception()
         }
 
       case Syntax.Put(e1, e2, e3) =>

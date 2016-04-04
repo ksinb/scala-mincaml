@@ -6,11 +6,7 @@ object Typing {
 
   def main(args: Array[String]) = {
     val res = new Typing()
-    //println(res.extenv)
-    println(res.test())
-    //println(res.extenv)
-
-
+    res.test()
   }
 }
 
@@ -21,10 +17,19 @@ class Typing extends Syntax {
   var extenv = Map.empty[Id.T, Type.T]
 
   def test() = {
+    /*
     val hoge =  LetRec(
       List(Fundef(("fname",Type.Var(None)),List(("arg1",Type.Var(None)), ("arg2",Type.Var(None))),FAdd(Var("arg1"),Var("arg2")))),
       App(Var("fname"),List(Float(1.1), Float(2.2)))
     )
+    */
+    val hoge = Let(("a",Type.Var(None)),Int(1),
+      Let(("b",Type.Var(None)),Int(2),
+        Let(("c",Type.Var(None)),Int(3),
+          Let(("d",Type.Var(None)),Int(4),Sub(Add(Add(Var("a"),Var("b")),Var("c")),Var("d"))))))
+
+
+    //val hoge = Tuple(List(Var("pple"), Int(2), Var("bananana"), Var("kiwi"), Var("orange")))
     /*
     var  hoge =
       LetRec(
@@ -44,7 +49,7 @@ class Typing extends Syntax {
         Bool(false)
       )
     */
-    //val hoge = Tuple(List(Var("pple"), Int(2), Var("bananana"), Var("kiwi"), Var("orange")))
+
 
     /*
     val hoge = LetTuple(
@@ -71,8 +76,7 @@ class Typing extends Syntax {
             case Some(s) => val t1 = deref_typ(s); r.a = Some(t1); t1
             case None => r.a = Some(Type.Int()); Type.Int()
           }
-        case t0 => t0
-
+        case _ => t
       }
   }
 
@@ -111,8 +115,8 @@ class Typing extends Syntax {
   }
 
   def occur(r1:Option[Type.T])(r2:Type.T):Boolean = {
-println("r1",r1)
-println("r2", r2)
+println("r1",r1, "r2", r2)
+
 
     r2 match {
       case Type.Fun(ts, t) => ts.exists(occur(r1)) || occur(r1)(t)
@@ -133,12 +137,9 @@ println("r2", r2)
   def unify(t:(Type.T, Type.T)):scala.Unit = {
 println("unify", t)
 
-    t  match {
-      case (Type.Unit(), Type.Unit()) |
-           (Type.Bool(), Type.Bool()) |
-           (Type.Int(), Type.Int()) |
-           (Type.Float(), Type.Float())
-        => ()
+    t match {
+      case (Type.Unit(), Type.Unit()) | (Type.Bool(), Type.Bool()) | (Type.Int(), Type.Int()) | (Type.Float(), Type.Float())
+        => Unit()
 
       //fun, fun
       case (Type.Fun(t1s, t1), Type.Fun(t2s, t2)) =>
@@ -157,21 +158,20 @@ println("unify", t)
           case Invalid() => throw Unify(t)
         }
       case (Type.Array(t1), Type.Array(t2)) => unify(t1, t2)
-      case (Type.Var(r1), Type.Var(r2)) if r1 == r2 => ()
+      case (Type.Var(r1), Type.Var(r2)) if r1 == r2 =>
 
       //var, _
       case (r@Type.Var(r1@t1), t2) =>
-println("varr")
+println("left var")
         t1 match {
           case Some(s) => unify(s, t2)
           case None =>
-            println("oc start", r1, t2)
             if (occur(r1)(t2)) {println("oc found");throw Unify(t)}
-            println("oc end")
             r.a = Some(t2)
         }
       //_, var
       case (t1, r@Type.Var(r2@t2)) =>
+println("right var")
         t2 match {
           case Some(s) => unify(t1, s)
           case None =>
@@ -185,8 +185,8 @@ println("varr")
   }
 
   def g(env:Map[Id.T, Type.T])(e:T):Type.T = {
-println("function g")
-println(e)
+println("[function g]", e)
+
     try {
       e match {
         case Unit() => Type.Unit()
@@ -235,10 +235,13 @@ println(e)
 
         case Let((x: Id.T, t: Type.T), e1: T, e2: T) =>
           unify(t, g(env)(e1))
-          g(env + (x -> t))(e2)
+          println("unify end", e1, e2)
+          val letval = g(env + (x -> t))(e2)
+          println("letval", e1, e2, letval)
+          letval
 
         case Var(x) =>
-          if (env.contains(x)) {println("env found");env(x)}
+          if (env.contains(x)) {println("env found", env);env(x)}
           else if (extenv.contains(x)) {println("extenv found");extenv(x)}
           else {
             val t = Type.gentyp()
@@ -295,10 +298,22 @@ println(e)
   }
 
   def f(e:T) = {
-    //extenv = Map.empty[Id.T, Type.T]
-    println(g(extenv)(e))
-    println("extenv", extenv)
-    //println(deref_typ(g(extenv)(e)))
+    extenv = Map.empty[Id.T, Type.T]
+
+    val result = g(Map.empty[Id.T, Type.T])(e)
+    println("result")
+    println(result, extenv)
+    println(deref_term(e))
+
+/*
+    val ddd = deref_typ(result)
+    println("deref:", ddd)
+
+    ddd match {
+      case Type.Unit() => Unit()
+      case _ => throw new Exception()
+    }
+*/
 
     /*
     try {
@@ -306,7 +321,7 @@ println(e)
     } catch {
       case Unify(_) => println("top level does not have type unit")
     }
-    extenv = extenv.map()
+    extenv = extenv.map(deref_typ)
     deref_term(e)
     */
   }
