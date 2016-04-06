@@ -23,11 +23,13 @@ class Typing extends Syntax {
       App(Var("fname"),List(Float(1.1), Float(2.2)))
     )
     */
+    /*
     val hoge = Let(("a",Type.Var(None)),Int(1),
       Let(("b",Type.Var(None)),Int(2),
         Let(("c",Type.Var(None)),Int(3),
           Let(("d",Type.Var(None)),Int(4),Sub(Add(Add(Var("a"),Var("b")),Var("c")),Var("d"))))))
-
+*/
+    val hoge = LetRec(Fundef(("gcd",Type.Var(None)),List(("m",Type.Var(None)), ("n",Type.Var(None))),If(Eq(Var("m"),Int(0)),Var("n"),If(LE(Var("m"),Var("n")),App(Var("gcd"),List(Var("m"), Sub(Var("n"),Var("m")))),App(Var("gcd"),List(Var("n"), Sub(Var("m"),Var("n"))))))),App(Var("gcd"),List(Int(3), Int(4))))
 
     //val hoge = Tuple(List(Var("pple"), Int(2), Var("bananana"), Var("kiwi"), Var("orange")))
     /*

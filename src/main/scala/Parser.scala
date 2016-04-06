@@ -187,7 +187,7 @@ class Parser extends Syntax with RegexParsers with PackratParsers{
 
   lazy val SimpleExpression: PackratParser[T] =
     BOOL |
-    FLOAT |
+    //FLOAT |
     INT |
     Ident ^^ {new Var(_)} |
     LParen ~> Expression <~ RParen |
@@ -214,8 +214,10 @@ class Parser extends Syntax with RegexParsers with PackratParsers{
 
 
   def parse() = {
+
+    val res = parseAll(Expression, "let rec gcd m n = if m = 0 then n else if m <= n then gcd m (n - m) else gcd n (m - n) in gcd 3 4")
     //val res = parseAll(Expression, "lambda 2.0 1.0")
-    val res = parseAll(Expression, "let a = 1 in let b = 2 in let c = 3 in let d = 4 in  a + b + c -d" )
+    //val res = parseAll(Expression, "let a = 1 in let b = 2 in let c = 3 in let d = 4 in  a + b + c -d" )
     //val res = parseAll(Pat, "apple, ho, bananana, kiwi, orange")
     //val res = parseAll(Expression, "let hoge = 1.2 in true")
     //val res = parseAll(Expression, "let (hoge1 , hage1  ,hoge2, hage2) = true in false" )
