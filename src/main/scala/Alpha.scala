@@ -1,69 +1,94 @@
 package mincaml
 
-class Alpha extends kNormal{
+object Alpha extends KNormal{
+
+  def main(args:Array[String]) = {
+    val hoge = Syntax.Let(("a", Type.Int()), Syntax.Int(1),
+      Syntax.Let(("a", Type.Int()), Syntax.Int(2),
+        Syntax.Let(("b", Type.Int()), Syntax.Int(3),
+          Syntax.Let(("b", Type.Int()), Syntax.Int(4), Syntax.Sub(Syntax.Add(Syntax.Add(Syntax.Var("a"), Syntax.Var("a")), Syntax.Var("b")), Syntax.Var("b"))))))
+    val kn = new KNormal
+    val d = kn.f(hoge)
+    println(d)
+    println(f(d.asInstanceOf[T]))
+  }
+
+  def f(e:T):T = {
+    g(Map.empty[Id.T, Id.T], e)
+  }
+
+  def find(x:Id.T, env:Map[Id.T, Id.T]) = {
+    env get x match {
+      case Some(s) => s
+      case None => x
+    }
+  }
 
   def g(env:Map[Id.T, Id.T], e:T):T = {
     e match {
       case Unit() => Unit()
       case Int(i) => Int(i)
       case Float(d) => Float(d)
-      case Neg(x) => Neg(env(x))
-      case Add(x, y) => Add(env(x), env(y))
-      case Sub(x, y) => Sub(env(x), env(y))
-      case FNeg(x) => FNeg(env(x))
-      case FAdd(x, y) => FAdd(env(x), env(y))
-      case FSub(x, y) => FSub(env(x), env(y))
-      case FMul(x, y) => FMul(env(x), env(y))
-      case FDiv(x, y) => FDiv(env(x), env(y))
+      case Neg(x) => Neg(find(x, env))
+      case Add(x, y) => Add(find(x, env), find(y, env))
+      case Sub(x, y) => Sub(find(x, env), find(y, env))
+      case FNeg(x) => FNeg(find(x, env))
+      case FAdd(x, y) => FAdd(find(x, env), find(y, env))
+      case FSub(x, y) => FSub(find(x, env), find(y, env))
+      case FMul(x, y) => FMul(find(x, env), find(y, env))
+      case FDiv(x, y) => FDiv(find(x, env), find(y, env))
 
-      case IfEq(x, y, e1, e2) => IfEq(env(x), env(y), g(env, e1), g(env, e2))
-      case IfLE(x, y, e1, e2) => IfLE(env(x), env(y), g(env, e1), g(env, e2))
+      case IfEq(x, y, e1, e2) => IfEq(find(x, env), find(y, env), g(env, e1), g(env, e2))
+      case IfLE(x, y, e1, e2) => IfLE(find(x, env), find(y, env), g(env, e1), g(env, e2))
       case Let((x, t), e1, e2) =>
         val xp = Id.genid(x)
         Let((xp, t), g(env, e1), g(env+(x->xp), e2))
 
-      case Var(x) => Var(env(x))
-
+      case Var(x) => Var(find(x, env))
+/*
       case LetRec(Fundef((x,t), yts, e1), e2) =>
         val env1 = env + (x->Id.genid(x))
-        val ys = yts.map((y)=>y._1)
-        //val envp = ys ++ (ys.map((y)=>Id.genid(y)), env1).zipped.map((_,_)) ////need modify
-        val envp = yts.foldLeft(env1){case (ep, (k, _))=>ep+(k->Id.genid(k))}
-
+        val envp = yts.foldLeft(env1){ case (ep, (k, _)) => ep+(k->Id.genid(k)) }
         LetRec(
           Fundef(
-            (env(x), t),
-            yts.map{ case (y, t1) => (envp(y), t1) },
+            (find(x, env), t),
+            yts.map{ case (y, t1) => (find(y, envp), t1) },
             g(envp, e1)
           ),
           g(env, e2)
         )
+*/
+      case LetRec(fundefs, e2) =>
+        val gt = fundefs.map(fd=>fd.name._1)
+        val env1 = gt.foldLeft(env){ case (e1, k) => e1+(k->Id.genid(k)) }
+        LetRec(
+          fundefs.map(fd=> {
+            val ys = fd.args.map(ag=>ag._1)
+            val envp = ys.foldLeft(env){ case (e1, k) => e1+(k->Id.genid(k))}
+            Fundef(
+              (find(fd.name._1, env), fd.name._2),
+              fd.args.map(ag =>(find(ag._1, env1), ag._2)),
+              g(env1, fd.body)
+            )
+          }),
+          g(env1, e2)
+        )
 
-
-      case App(x, ys) => App(env(x), ys.map((y)=>env(y)))
-      case Tuple(xs) => Tuple(xs.map((x)=>env(x)))
+      case App(x, ys) => App(find(x, env), ys.map((y)=>find(y, env)))
+      case Tuple(xs) => Tuple(xs.map((x)=>find(x, env)))
 
       case LetTuple(xts, y, e2) =>
-        val xs = xts.map((x)=>x._1)
-        val envp = xts.foldLeft(env){ case (e1, (k, _)) => e1+(k->Id.genid(k)) }   //need modify
-
+        val envp = xts.foldLeft(env){ case (e1, (k, _)) => e1+(k->Id.genid(k)) }
         LetTuple(
           xts.map{ case (x, t) => (envp(x), t) },
-          env(y),
+          find(y, env),
           g(envp, e2)
         )
 
-
-      case Get(x, y) => Get(env(x), env(y))
-      case Put(x, y, z) => Put(env(x), env(y), env(z))
+      case Get(x, y) => Get(find(x, env), find(y, env))
+      case Put(x, y, z) => Put(find(x, env), find(y, env), find(z, env))
       case ExtArray(x) => ExtArray(x)
-      case ExtFunApp(x, ys) => ExtFunApp(x, ys.map((y)=>env(y)))
-
+      case ExtFunApp(x, ys) => ExtFunApp(x, ys.map((y)=>find(y, env)))
     }
-    
-  }
-
-  def f(e:T) = {
-    g(Map.empty[Id.T, Id.T], e)
   }
 }
