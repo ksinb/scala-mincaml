@@ -83,7 +83,7 @@ class Parser extends Syntax with RegexParsers with PackratParsers{
     }
 
   lazy val RecursiveFunctionDeclaration : PackratParser[LetRec] =
-    LET ~ Rec ~ FUNDEF ~ In ~ Expression ^^ {
+    LET ~ Rec ~ Fundefs ~ In ~ Expression ^^ {
       case lt ~ rc ~ fd ~ in ~ exp => LetRec(fd, exp)
     }
 
@@ -214,8 +214,9 @@ class Parser extends Syntax with RegexParsers with PackratParsers{
 
 
   def parse() = {
-
-    val res = parseAll(Expression, "let rec gcd m n = if m = 0 then n else if m <= n then gcd m (n - m) else gcd n (m - n) in gcd 3 4")
+    val res = parseAll(Expression, "let x = (let y = 3 in y + y) in x - x")
+    //val res = parseAll(Expression, "let y = 3 in let x = y in x + y")
+    //val res = parseAll(Expression, "let rec gcd m n = if m = 0 then n else if m <= n then gcd m (n - m) else gcd n (m - n) in gcd 3 4")
     //val res = parseAll(Expression, "lambda 2.0 1.0")
     //val res = parseAll(Expression, "let a = 1 in let b = 2 in let c = 3 in let d = 4 in  a + b + c -d" )
     //val res = parseAll(Pat, "apple, ho, bananana, kiwi, orange")

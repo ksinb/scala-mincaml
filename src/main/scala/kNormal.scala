@@ -1,6 +1,6 @@
 package mincaml
 
-object kNormal {
+object KNormal {
   def main(args: Array[String]) = {
 
     val env = Map[Id.T, Type.T]("lambda"->Type.Int())
@@ -13,13 +13,12 @@ object kNormal {
         Syntax.Let(("c",Type.Int()),Syntax.Int(3),
           Syntax.Let(("d",Type.Int()),Syntax.Int(4),Syntax.Sub(Syntax.Add(Syntax.Add(Syntax.Var("a"),Syntax.Var("b")),Syntax.Var("c")),Syntax.Var("d"))))))
 
-    val kn = new kNormal()
+    val kn = new KNormal
     println(kn.f(hoge))
   }
 }
 
-
-class kNormal {
+class KNormal {
   sealed abstract class T()
   case class Unit() extends T
   case class Int(int:scala.Int) extends T
@@ -36,7 +35,7 @@ class kNormal {
   case class IfLE(a:Id.T, b:Id.T, c:T, d:T) extends T
   case class Let(t1:(Id.T, Type.T), t2:T, t3:T) extends T
   case class Var(t:Id.T) extends T
-  case class LetRec(a:Fundef, t:T) extends T
+  case class LetRec(a:List[Fundef], t:T) extends T
   case class App(t:Id.T, ts:List[Id.T]) extends T
   case class Tuple(ts:List[Id.T]) extends T
   case class LetTuple(t:List[(Id.T, Type.T)], u:Id.T, v:T) extends T
@@ -48,7 +47,6 @@ class kNormal {
 
   def f(e:Syntax.T):T = {
     val result = g(Map[Id.T, Type.T](), e)
-    println("res:", result)
     result._1
   }
 
@@ -63,8 +61,6 @@ class kNormal {
   }
 
   def g(env:Map[Id.T, Type.T], t0:Syntax.T):(T, Type.T) = {
-    println("env", env)
-    println("t0", t0)
     t0 match {
       case Syntax.Unit() => (Unit(), Type.Unit())
       //case Syntax.Bool(b) => Int(1)
@@ -150,16 +146,29 @@ class kNormal {
       case Syntax.Var(x) =>
         Typing.extenv(x) match {
           case t@Type.Array(_) => (ExtArray(x), t)
-          case _ => println("not in extenv"); throw new Exception();
+          case _ => throw new Exception();
         }
-
+/*
       case Syntax.LetRec(Syntax.Fundef((x, t), yts, e1), e2) =>
         val env1 = env + (x->t)
         val (e2p, t2) = g(env1, e2)
-        val (e1p, t1) = g(env1 ++ yts, e1)
+        val (e1p, _) = g(env1 ++ yts, e1)
         (LetRec(
           Fundef((x,t), yts, e1p),
           e2p),
+          t2
+        )
+*/
+      case Syntax.LetRec(fundefs, e2) =>
+        val env1 = env ++ fundefs.map(fd=>fd.name)
+        val (e2p, t2) = g(env1, e2)
+        (
+          LetRec(
+            fundefs.map(fd => {
+              val (e1p, _) = g(env1 ++ fd.args, fd.body)
+              Fundef(fd.name, fd.args, e1p)
+            }),
+            e2p),
           t2
         )
 
@@ -174,13 +183,11 @@ class kNormal {
               }
             }
             bind(List(), e1s)
-          case _ => println("App1 Error"); throw new Exception()
+          case _ => throw new Exception()
         }
 
       case Syntax.App(e1, e1s) =>
-        val hoge = g(env, e1)
-        println("hoge", hoge)
-        hoge match {
+        g(env, e1) match {
           case et1@(e1p, Type.Fun(_, t)) =>
             insert_let(
               et1,
@@ -195,7 +202,7 @@ class kNormal {
                 bind(List(), e1s)
               }
             )
-          case _ => println("App2 Error"); throw new Exception()
+          case _ => throw new Exception()
         }
 
       case Syntax.Tuple(es) =>

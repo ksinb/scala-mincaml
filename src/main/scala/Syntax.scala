@@ -27,7 +27,7 @@ class Syntax {
   case class Let(a: (Id.T, Type.T), c: T, b: T) extends T
   case class Var(b: Id.T) extends T
 
-  case class LetRec(a:Fundef, t:T) extends T
+  case class LetRec(a:List[Fundef], t:T) extends T
   case class App(t: T, l: List[T]) extends T
   case class Tuple(t: List[T]) extends T
   case class LetTuple(a: List[(Id.T, Type.T)], b: T, c: T) extends T
