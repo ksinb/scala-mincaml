@@ -53,9 +53,9 @@ object Beta extends KNormal{
             Let((x, t), e1p, e2p)
         }
 
-      case LetRec(fundefs, e) =>
+      case LetRec(fundefs, ep) =>
         val fds = fundefs.map(fd=>Fundef(fd.name, fd.args, g(env, fd.body)))
-        LetRec(fds, g(env, e))
+        LetRec(fds, g(env, ep))
 
       case Var(x) =>
         Var(find(x, env))

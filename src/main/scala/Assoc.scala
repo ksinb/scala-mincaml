@@ -46,8 +46,8 @@ object Assoc extends KNormal{
           f(e2)
         )
 
-      case LetTuple(xts, y, e) =>
-        LetTuple(xts, y, f(e))
+      case LetTuple(xts, y, ep) =>
+        LetTuple(xts, y, f(ep))
 
       case ep => ep
     }

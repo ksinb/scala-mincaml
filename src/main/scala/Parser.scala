@@ -3,7 +3,7 @@ import scala.util.parsing.combinator._
 
 object Parser {
   def main(args: Array[String]) = {
-    new Parser().parse()
+   // new Parser().parse()
   }
 }
 
@@ -213,8 +213,13 @@ class Parser extends Syntax with RegexParsers with PackratParsers{
     }
 
 
-  def parse() = {
-    val res = parseAll(Expression, "let x = (let y = 3 in y + y) in x - x")
+  def parse(src:String) = {
+    parseAll(Expression, src) match {
+      case Success(r, n) => r
+      case Failure(msg, n) => throw new Exception()
+    }
+
+    //val res = parseAll(Expression, "let x = (let y = 3 in y + y) in x - x")
     //val res = parseAll(Expression, "let y = 3 in let x = y in x + y")
     //val res = parseAll(Expression, "let rec gcd m n = if m = 0 then n else if m <= n then gcd m (n - m) else gcd n (m - n) in gcd 3 4")
     //val res = parseAll(Expression, "lambda 2.0 1.0")
@@ -228,7 +233,6 @@ class Parser extends Syntax with RegexParsers with PackratParsers{
     //val res = parseAll(Expression, "if false then 2 else 3.8" )
     //val res = parseAll(VariableDeclaration, "let fdsfalse = false in true" )
     //val res = parseAll(RecursiveFunctionDeclaration, "let rec va fdsfalse rue dfas = true and va fdsfalse rue dfas = true in false" )
-    println(res)
   }
 
 }

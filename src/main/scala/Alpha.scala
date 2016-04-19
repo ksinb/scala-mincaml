@@ -60,13 +60,17 @@ object Alpha extends KNormal{
 */
       case LetRec(fundefs, e2) =>
         val gt = fundefs.map(fd=>fd.name._1)
+        println("gt", gt)
         val env1 = gt.foldLeft(env){ case (e1, k) => e1+(k->Id.genid(k)) }
+        println("env1", env1)
         LetRec(
           fundefs.map(fd=> {
             val ys = fd.args.map(ag=>ag._1)
+            println("ys", ys)
             val envp = ys.foldLeft(env){ case (e1, k) => e1+(k->Id.genid(k))}
+            println("envp", envp)
             Fundef(
-              (find(fd.name._1, env), fd.name._2),
+              (find(fd.name._1, env1), fd.name._2),
               fd.args.map(ag =>(find(ag._1, env1), ag._2)),
               g(env1, fd.body)
             )
