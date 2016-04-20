@@ -26,20 +26,14 @@ class Typing extends Syntax {
 
     //val hoge = Let(("x",Type.Var(None)),Let(("y",Type.Var(None)),Int(3),Add(Var("y"),Var("y"))),Sub(Var("x"),Var("x")))
 
-/*
+
     val hoge = Let(("a",Type.Var(None)),Int(1),
       Let(("b",Type.Var(None)),Int(2),
         Let(("c",Type.Var(None)),Int(3),
           Let(("d",Type.Var(None)),Int(4),Sub(Add(Add(Var("a"),Var("b")),Var("c")),Var("d"))))))
 
-*/
 
-    val hoge = LetRec(
-      List(Fundef(("gcd",Type.Var(None)),List(("m",Type.Var(None)), ("n",Type.Var(None))),
-        If(Eq(Var("m"),Int(0)),Var("n"),If(LE(Var("m"),Var("n")),
-          App(Var("gcd"),List(Var("m"), Sub(Var("n"),Var("m")))),
-            App(Var("gcd"),List(Var("n"),
-              Sub(Var("m"),Var("n")))))))),App(Var("gcd"),List(Int(3), Int(4))))
+
 
     //val hoge = Tuple(List(Var("pple"), Int(2), Var("bananana"), Var("kiwi"), Var("orange")))
     /*
@@ -111,14 +105,14 @@ class Typing extends Syntax {
       case FDiv(e1, e2) => FDiv(deref_term(e1), deref_term(e2))
       case If(e1, e2, e3) => If(deref_term(e1), deref_term(e2), deref_term(e3))
       case Let(xt, e1, e2) => Let(deref_id_typ(xt), deref_term(e1), deref_term(e2))
-      case LetRec(fundefs, e2) =>
+      case LetRec(Fundef(name, args, body), e2) =>
         LetRec(
-          fundefs.map(x => Fundef(deref_id_typ(x.name), x.args.map(deref_id_typ), deref_term(x.body))),
-          //Fundef(
-//            deref_id_typ(xt),
-//            yts.map((y)=>deref_id_typ(y)),
-//            deref_term(e1)
-//          ),
+          //fundefs.map(x => Fundef(deref_id_typ(x.name), x.args.map(deref_id_typ), deref_term(x.body))),
+          Fundef(
+            deref_id_typ(name),
+            args.map((y)=>deref_id_typ(y)),
+            deref_term(body)
+          ),
           deref_term(e2)
         )
       case App(e, es) => App(deref_term(e), es.map(deref_term))
@@ -260,14 +254,16 @@ class Typing extends Syntax {
             t
           }
 
-        case LetRec(fundefs, e2) =>
-          val ev = env ++ fundefs.map(fd => fd.name)
-          fundefs.foreach(
-            fd => unify(
-              fd.name._2,
-              Type.Fun(fd.args.map(ag => ag._2),
-                g(ev ++ fd.args)(fd.body))
-            )
+        case LetRec(Fundef((x, t), args, body), e2) =>
+          //val ev = env ++ fundefs.map(fd => fd.name)
+          val ev = env+(x->t)
+          //fundefs.foreach(
+          //  fd => unify(
+//              fd.name._2,
+//              Type.Fun(fd.args.map(ag => ag._2),
+//                g(ev ++ fd.args)(fd.body))
+//            )
+          unify(t, Type.Fun(args.map(ag=>ag._2), g(ev++args)(body))
           )
           g(ev)(e2)
 

@@ -45,7 +45,7 @@ object Alpha extends KNormal{
         Let((xp, t), g(env, e1), g(env+(x->xp), e2))
 
       case Var(x) => Var(find(x, env))
-/*
+
       case LetRec(Fundef((x,t), yts, e1), e2) =>
         val env1 = env + (x->Id.genid(x))
         val envp = yts.foldLeft(env1){ case (ep, (k, _)) => ep+(k->Id.genid(k)) }
@@ -57,7 +57,7 @@ object Alpha extends KNormal{
           ),
           g(env, e2)
         )
-*/
+/*
       case LetRec(fundefs, e2) =>
         val gt = fundefs.map(fd=>fd.name._1)
         println("gt", gt)
@@ -77,7 +77,7 @@ object Alpha extends KNormal{
           }),
           g(env1, e2)
         )
-
+*/
       case App(x, ys) => App(find(x, env), ys.map((y)=>find(y, env)))
       case Tuple(xs) => Tuple(xs.map((x)=>find(x, env)))
 

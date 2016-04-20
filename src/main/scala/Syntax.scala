@@ -7,7 +7,7 @@ class Syntax {
   case class Unit() extends T
   case class Bool(t: Boolean) extends T
   case class Int(t: scala.Int) extends T
-  case class Float(t: Double) extends T
+  case class Float(t: scala.Double) extends T
   case class Not(t: T) extends T
   case class Neg(t: T) extends T
   case class FNeg(t: T) extends T
@@ -27,7 +27,7 @@ class Syntax {
   case class Let(a: (Id.T, Type.T), c: T, b: T) extends T
   case class Var(b: Id.T) extends T
 
-  case class LetRec(a:List[Fundef], t:T) extends T
+  case class LetRec(a:Fundef, t:T) extends T
   case class App(t: T, l: List[T]) extends T
   case class Tuple(t: List[T]) extends T
   case class LetTuple(a: List[(Id.T, Type.T)], b: T, c: T) extends T

@@ -40,9 +40,9 @@ object Assoc extends KNormal{
         }
         insert(f(e1))
 
-      case LetRec(fundefs, e2) =>
+      case LetRec(Fundef(name, args, body), e2) =>
         LetRec(
-          fundefs.map(fd => Fundef(fd.name, fd.args, fd.body)),
+          Fundef(name, args, f(body)),
           f(e2)
         )
 

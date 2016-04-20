@@ -6,22 +6,21 @@ object Inline extends KNormal{
 
     val parser = new Parser
     val pr = parser.parse("let rec fact n = if n = 0 then 1 else n + fact (n-1) in fact 3")
-//println("pr", pr.getClass)
 
     val typing = new Typing
     val tp = typing.f(pr.asInstanceOf[typing.T])
-//println("tp", tp)
 
     val knormal = new KNormal
     val kn= knormal.f(tp.asInstanceOf[Syntax.T])
-//println("kn", kn)
 
     val al = Alpha.f(kn.asInstanceOf[Alpha.T])
-//println("al", al)
 
     val bt = Beta.f(al.asInstanceOf[Beta.T])
-    println(bt)
-    println(f(bt.asInstanceOf[T]))
+
+    val as = Assoc.f(bt.asInstanceOf[Assoc.T])
+
+    println(as)
+    println(f(as.asInstanceOf[T]))
 
     /*
     LetRec(
@@ -108,7 +107,8 @@ object Inline extends KNormal{
     e match {
       case IfEq(_, _, e1, e2) =>  1 + size(e1) + size(e2)
       case Let(_, e1, e2) => 1 + size(e1) + size(e2)
-      case LetRec(fundefs, e2) => fundefs.foldLeft(size(e2)){case (s, fd) => s + 1 + size(fd.body)}
+      //case LetRec(fundefs, e2) => fundefs.foldLeft(size(e2)){case (s, fd) => s + 1 + size(fd.body)}
+      case LetRec(Fundef(name, args, body), e2) => 1 + size(body) + size(e2)
       case LetTuple(_, _, ep) => 1 + size(ep)
       case _ => 1
     }
@@ -136,13 +136,15 @@ object Inline extends KNormal{
       case IfLE(x, y, e1, e2) => IfLE(x, y, g(env, e1), g(env, e2))
       case Let(xt, e1, e2) => Let(xt, g(env, e1), g(env, e2))
 
-      case LetRec(fundefs, e2) =>
-        val envp = fundefs.foldLeft(env){
-          case (ev, fd) =>
-            if (size(fd.body) > threshold) ev else ev + (fd.name._1->(fd.args, fd.body))
-        }
-        val fundefsp = fundefs.map(fd=>Fundef(fd.name, fd.args, g(env, fd.body)))
-        LetRec(fundefsp, g(envp, e2))
+      case LetRec(Fundef((x, t), args, body), e2) =>
+        //val envp = fundefs.foldLeft(env){
+//          case (ev, fd) =>
+//            if (size(fd.body) > threshold) ev else ev + (fd.name._1->(fd.args, fd.body))
+//        }
+  //      val fundefsp = fundefs.map(fd=>Fundef(fd.name, fd.args, g(env, fd.body)))
+//        LetRec(fundefsp, g(envp, e2))
+          val envp = if (size(body) > threshold) env else env + (x->(args, body))
+          LetRec(Fundef((x, t), args, g(env, body)), g(envp, e2))
 
       case App(x, ys) if env.get(x).isDefined =>
         val (zs, e) = env(x)
