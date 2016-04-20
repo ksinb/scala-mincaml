@@ -5,7 +5,7 @@ object Elim extends KNormal{
   def main(args:Array[String]) = {
 
     val parser = new Parser
-    val pr = parser.parse("let rec fact n = if n = 0 then 1 else n + fact (n-1) in fact 3")
+    val pr = parser.parse("let x = 3 in let y = 7 in 10")
 
     val typing = new Typing
     val tp = typing.f(pr.asInstanceOf[typing.T])
@@ -17,14 +17,25 @@ object Elim extends KNormal{
     val as = Assoc.f(bt.asInstanceOf[Assoc.T])
     val il = Inline.f(as.asInstanceOf[Inline.T])
     val cf = ConstFold.f(il.asInstanceOf[ConstFold.T])
-    println(cf)
+    println("cf", cf)
+    println("em", f(cf.asInstanceOf[Elim.T]))
 
   }
 
-
-  /*
     def effect(e:T):scala.Boolean = {
-      true
+      e match {
+        case Let(_, e1, e2) => effect(e1) || effect(e2)
+        case IfEq(_, _, e1, e2) => effect(e1) || effect(e2)
+        case IfLE(_, _, e1, e2) => effect(e1) || effect(e2)
+
+        case LetRec(_, e1) => effect(e1)
+        case LetTuple(_, _, e1) => effect(e1)
+
+        case App(_, _) => true
+        case Put(_, _, _) => true
+        case ExtFunApp(_, _) => true
+        case _ => false
+      }
     }
 
     def f(e:T):T = {
@@ -35,15 +46,22 @@ object Elim extends KNormal{
         case Let((x, t), e1, e2) =>
           val e1p = f(e1)
           val e2p = f(e2)
-          if effect(e1p) || fv(e2p)(x) Let((x, t), e1p, e2p)
-          else throw new Exception()
+          if (effect(e1p) || fv(e2p)(x)) Let((x, t), e1p, e2p)
+          else println("eliminating variable " + x + "@."); e2p
 
-        case LetRec(fundefs, e2) =>
+        case LetRec(Fundef((x, t), args, body), e2) =>
           val e2p = f(e2)
-          if fv(e2p)(fundefs)
+          if (fv(e2p) contains x) LetRec(Fundef((x, t), args, body), e2)
+          else println("eliminating function " + x + "@."); e2p
 
+        case LetTuple(xts, y, e2) =>
+          val xs = xts.map(xt=>xt._1)
+          val ep = f(e)
+          val live = fv(ep)
+          if (xs.exists(x=>live(x))) LetTuple(xts, y, ep)
+          else println("eliminating variables " + Id.pp_list(xs) + "@."); ep
 
-          val live = fv
+        case ep => ep
       }
-    }*/
+    }
 }
