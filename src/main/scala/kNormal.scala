@@ -1,6 +1,8 @@
 package mincaml
 
-object KNormal {
+import scala.collection.immutable._
+
+object KNormal extends KNormal{
   def main(args: Array[String]) = {
 
     val env = Map[Id.T, Type.T]("lambda"->Type.Int())
@@ -22,7 +24,7 @@ class KNormal {
   sealed abstract class T()
   case class Unit() extends T
   case class Int(int:scala.Int) extends T
-  case class Float(double: Double) extends T
+  case class Float(double: scala.Double) extends T
   case class Neg(t:Id.T) extends T
   case class Add(a:Id.T, b:Id.T) extends T
   case class Sub(a:Id.T, b:Id.T) extends T
@@ -35,7 +37,7 @@ class KNormal {
   case class IfLE(a:Id.T, b:Id.T, c:T, d:T) extends T
   case class Let(t1:(Id.T, Type.T), t2:T, t3:T) extends T
   case class Var(t:Id.T) extends T
-  case class LetRec(a:List[Fundef], t:T) extends T
+  case class LetRec(a:Fundef, t:T) extends T
   case class App(t:Id.T, ts:List[Id.T]) extends T
   case class Tuple(ts:List[Id.T]) extends T
   case class LetTuple(t:List[(Id.T, Type.T)], u:Id.T, v:T) extends T
@@ -46,8 +48,40 @@ class KNormal {
   case class Fundef(name:(Id.T, Type.T), args:List[(Id.T, Type.T)], body:T) extends T
 
   def f(e:Syntax.T):T = {
-    val result = g(Map[Id.T, Type.T](), e)
+    val result = g(Map.empty[Id.T, Type.T], e)
     result._1
+  }
+
+  def fv(e:T):Set[Id.T] = {
+    e match {
+      case Unit() | Int(_) | Float(_) | ExtArray(_) => Set()
+      case Neg(x) => Set(x)
+      case FNeg(x) => Set(x)
+      case Add(x, y) => Set(x, y)
+      case Sub(x, y) => Set(x, y)
+      case FAdd(x, y) => Set(x, y)
+      case FSub(x, y) => Set(x, y)
+      case FMul(x, y) => Set(x, y)
+      case FDiv(x, y) => Set(x, y)
+      case Get(x, y) => Set(x, y)
+
+      case IfEq(x, y, e1, e2) => (fv(e1) union fv(e2)) + x + y
+      case IfLE(x, y, e1, e2) => (fv(e1) union fv(e2)) + x + y
+      case Let((x, t), e1, e2) => fv(e1) union (fv(e2) - x)
+
+      case Var(x) => Set(x)
+
+      case LetRec(Fundef((x, t), args, body), e2) =>
+        val zs = fv(body) diff (Set() ++ args.map(ag=>ag._1))
+        (zs union fv(e2)) diff Set(x)
+
+      case App(x, ys) => Set() ++ (x::ys)
+      case Tuple(xs) => Set() ++ xs
+      case Put(x, y, z) => Set() + x + y + z
+
+      case LetTuple(xs, y, ep) =>
+        Set(y) ++ (fv(e) diff (Set() ++ xs.map(x=>x._1)))
+    }
   }
 
   def insert_let(e0:(T, Type.T), k:Id.T=>(T, Type.T)):(T, Type.T) = {
@@ -148,7 +182,7 @@ class KNormal {
           case t@Type.Array(_) => (ExtArray(x), t)
           case _ => throw new Exception();
         }
-/*
+
       case Syntax.LetRec(Syntax.Fundef((x, t), yts, e1), e2) =>
         val env1 = env + (x->t)
         val (e2p, t2) = g(env1, e2)
@@ -158,7 +192,7 @@ class KNormal {
           e2p),
           t2
         )
-*/
+/*
       case Syntax.LetRec(fundefs, e2) =>
         val env1 = env ++ fundefs.map(fd=>fd.name)
         val (e2p, t2) = g(env1, e2)
@@ -171,7 +205,7 @@ class KNormal {
             e2p),
           t2
         )
-
+*/
       case Syntax.App(Syntax.Var(f), e1s) if !env.contains(f) =>
         Typing.extenv(f) match {
           case Type.Fun(_, t) =>
