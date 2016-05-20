@@ -30,7 +30,6 @@ object Id {
   def gentmp(tp:Type.T):T = {
     counter += 1
     val rc = "T" + id_of_typ(tp) + counter
-    println("gentmp rc=" + rc)
     rc
   }
 }

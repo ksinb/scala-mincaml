@@ -32,19 +32,19 @@ class Asm {
   case class StDF(a:Id.T, b:Id.T, c:id_or_imm, d:Int) extends Exp
   case class Comment(s:String) extends  Exp
 
-  case class IfEq(a:Id.T, b:id_or_imm, c:T, d:T) extends  Exp
-  case class IfLE(a:Id.T, b:id_or_imm, c:T, d:T) extends  Exp
-  case class IfGE(a:Id.T, b:id_or_imm, c:T, d:T) extends  Exp
-  case class IfFEq(a:Id.T, b:Id.T, c:T, d:T) extends  Exp
-  case class IfFLE(a:Id.T, b:Id.T, c:T, d:T) extends  Exp
+  case class IfEq(a:Id.T, b:id_or_imm, c:T, d:T) extends Exp
+  case class IfLE(a:Id.T, b:id_or_imm, c:T, d:T) extends Exp
+  case class IfGE(a:Id.T, b:id_or_imm, c:T, d:T) extends Exp
+  case class IfFEq(a:Id.T, b:Id.T, c:T, d:T) extends Exp
+  case class IfFLE(a:Id.T, b:Id.T, c:T, d:T) extends Exp
 
-  case class CallCls(a:Id.T, b:List[Id.T], c:List[Id.T]) extends  Exp
-  case class CallDir(a:Id.T, b:List[Id.T], c:List[Id.T]) extends  Exp
-  case class Save(a:Id.T, b:Id.T) extends  Exp
-  case class Restore(a:Id.T) extends  Exp
+  case class CallCls(a:Id.T, b:List[Id.T], c:List[Id.T]) extends Exp
+  case class CallDir(a:Id.T, b:List[Id.T], c:List[Id.T]) extends Exp
+  case class Save(a:Id.T, b:Id.T) extends Exp
+  case class Restore(a:Id.T) extends Exp
 
-  case class Fundef(name:Id.L, args:List[Id.L], fargs:List[Id.T], body:T, ret:Type.T) extends  Exp
-  case class Prog(a:List[(Id.L, Float)], b:List[Fundef], c:T) extends  Exp
+  case class Fundef(name:Id.L, args:List[Id.L], fargs:List[Id.T], body:T, ret:Type.T) extends Exp
+  case class Prog(a:List[(Id.L, Double)], b:List[Fundef], c:T) extends Exp
 
   def fletd(x:Id.T, e1:Exp, e2:T):T = Let((x, Type.Float()), e1, e2)
 
@@ -54,7 +54,7 @@ class Asm {
   val fregs = Array("%xmm0", "%xmm1", "%xmm2", "%xmm3", "%xmm4", "%xmm5", "%xmm6", "%xmm7")
   val allregs = regs.toList
   val allfregs = fregs.toList
-  val reg_cl = regs(regs.size -1)
+  val reg_cl = regs(regs.length -1)
   val reg_sqp = "%ebp"
   val reg_hp = "min_caml_hp"
   def is_reg(x:String):Boolean = x(0) == '%' || x == reg_hp

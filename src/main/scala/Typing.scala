@@ -1,11 +1,7 @@
 package mincaml
 
 object Typing {
-
-  var extenv = Map[Id.T, Type.T]("lambda"->Type.Int())
-
-  def main(args: Array[String]) = {
-  }
+  var extenv = Map[Id.T, Type.T]()
 }
 
 class Typing extends Syntax {
@@ -13,64 +9,6 @@ class Typing extends Syntax {
   case class Unify(t:(Type.T, Type.T)) extends Exception
   case class Invalid() extends Exception
   var extenv = Map.empty[Id.T, Type.T]
-
-  def test() = {
-    /*
-    val hoge =  LetRec(
-      List(Fundef(("fname",Type.Var(None)),List(("arg1",Type.Var(None)), ("arg2",Type.Var(None))),FAdd(Var("arg1"),Var("arg2")))),
-      App(Var("fname"),List(Float(1.1), Float(2.2)))
-    )
-    */
-
-    //val hoge = Let(("y",Type.Var(None)),Int(3),Let(("x",Type.Var(None)),Var("y"),Add(Var("x"),Var("y"))))
-
-    //val hoge = Let(("x",Type.Var(None)),Let(("y",Type.Var(None)),Int(3),Add(Var("y"),Var("y"))),Sub(Var("x"),Var("x")))
-
-
-    val hoge = Let(("a",Type.Var(None)),Int(1),
-      Let(("b",Type.Var(None)),Int(2),
-        Let(("c",Type.Var(None)),Int(3),
-          Let(("d",Type.Var(None)),Int(4),Sub(Add(Add(Var("a"),Var("b")),Var("c")),Var("d"))))))
-
-
-
-
-    //val hoge = Tuple(List(Var("pple"), Int(2), Var("bananana"), Var("kiwi"), Var("orange")))
-    /*
-    var  hoge =
-      LetRec(
-        List( Fundef(("bar",Type.Var(None)), List(("hoge1",Type.Float()),("hage1",Type.Float())), Bool(true))),
-        Bool(false)
-      )
-
-    val hoge =
-      LetRec(
-        List(
-          Fundef(
-            ("myfunc",Type.Var(None)),
-            List(("ag1",Type.Var(None)), ("ag2",Type.Var(None))),
-            Int(2)
-          )
-        ),
-        Bool(false)
-      )
-    */
-
-
-    /*
-    val hoge = LetTuple(
-      List(("arg1",Type.Var(None)), ("arg2",Type.Var(None)), ("arg3",Type.Var(None)), ("arg4",Type.Var(None))),
-      Bool(true),
-      Bool(false)
-    )
-    */
-    //val hoge = Get(Var("hoge"),Int(1))
-    //var hoge = If(Bool(false),Bool(true),Bool(false))
-    //var hoge = Map("vad"->Type.Int()) ++ hoge.fundef.map((fun:Fundef)=>fun.name)
-    //var hoge = g( Map("vad"->Type.Int()) )( hoge )
-    //val hoge = App(Var("lambda"), List(Float(2.0), Float(1.0)))
-    f(hoge)
-  }
 
   def deref_typ(t:Type.T):Type.T = {
       t match  {
@@ -107,7 +45,6 @@ class Typing extends Syntax {
       case Let(xt, e1, e2) => Let(deref_id_typ(xt), deref_term(e1), deref_term(e2))
       case LetRec(Fundef(name, args, body), e2) =>
         LetRec(
-          //fundefs.map(x => Fundef(deref_id_typ(x.name), x.args.map(deref_id_typ), deref_term(x.body))),
           Fundef(
             deref_id_typ(name),
             args.map((y)=>deref_id_typ(y)),
@@ -132,7 +69,10 @@ class Typing extends Syntax {
       case Type.Tuple(ts) => ts.exists(occur(r1))
       case Type.Array(t) => occur(r1)(t)
 
-      case Type.Var(t) if r1 == t => true
+      case Type.Var(t) if r1 == t =>
+
+        println("occccccc", None==None, r1, t)
+        true
       case Type.Var(t1) =>
         t1 match {
           case Some(t2) => occur(r1)(t2)
@@ -146,10 +86,12 @@ class Typing extends Syntax {
   def unify(t:(Type.T, Type.T)):scala.Unit = {
 
     t match {
-      case (Type.Unit(), Type.Unit()) | (Type.Bool(), Type.Bool()) | (Type.Int(), Type.Int()) | (Type.Float(), Type.Float())
-        => Unit()
+      case (Type.Unit(), Type.Unit())
+         | (Type.Bool(), Type.Bool())
+         | (Type.Int(), Type.Int())
+         | (Type.Float(), Type.Float())
+        =>
 
-      //fun, fun
       case (Type.Fun(t1s, t1), Type.Fun(t2s, t2)) =>
         try {
           (t1s, t2s).zipped.map(unify(_, _))
@@ -158,7 +100,6 @@ class Typing extends Syntax {
         }
         unify(t1, t2)
 
-      //tuple, tuple
       case (Type.Tuple(t1s), Type.Tuple(t2s)) =>
         try {
           (t1s, t2s).zipped.map(unify(_, _))
@@ -168,26 +109,31 @@ class Typing extends Syntax {
       case (Type.Array(t1), Type.Array(t2)) => unify(t1, t2)
       case (Type.Var(r1), Type.Var(r2)) if r1 == r2 =>
 
-      //var, _
-      case (r@Type.Var(r1@t1), t2) =>
+      case (Type.Var(Some(t1)), t2) => unify(t1, t2)
+      case (t1, Type.Var(Some(t2))) => unify(t1, t2)
 
-        t1 match {
-          case Some(s) => unify(s, t2)
-          case None =>
-            if (occur(r1)(t2)) throw Unify(t)
-            r.a = Some(t2)
+      case (r@Type.Var(r1@None), t2) =>
+        println("hoge", t2)
+        println("r", r)
+        if (occur(r1)(t2)) {
+          println("  1occ", r1, t2)
+          //throw Unify(t)
+        } else {
+          println("  1nop", r1, t2)
         }
-      //_, var
-      case (t1, r@Type.Var(r2@t2)) =>
+        r.a = Some(t2)
 
-        t2 match {
-          case Some(s) => unify(t1, s)
-          case None =>
-            if (occur(r2)(t1)) throw Unify(t)
-            r.a = Some(t1)
+      case (t1, r@Type.Var(r2@None)) =>
+        println("hoge", t1)
+        println("r", r)
+        if (occur(r2)(t1)) {
+          println("  2occ", r2, t1)
+          //throw Unify(t)
+        } else {
+          println("  2nop", r2, t1)
         }
+        r.a = Some(t1)
 
-      //_, _
       case (a, b) => throw Unify(a, b)
     }
   }
@@ -206,11 +152,29 @@ class Typing extends Syntax {
         case Neg(e1)
         => unify(Type.Int(), g(env)(e1)); Type.Int()
 
-        case Add(e1: T, e2: T)
-        => unify(Type.Int(), g(env)(e1)); unify(Type.Int(), g(env)(e2)); Type.Int()
+        case App(e1, es) =>
+          val t1 = Type.gentyp()
+          val b = g(env)(e1)
+          val hoge = es.map(g(env))
+          println("b", b)
+          println("hoge", hoge)
+          unify(b, Type.Fun(hoge, t1))
+          //unify(b, Type.Fun(es.map(g(env)), t1))
+          t1
 
-        case Sub(e1, e2)
-        => unify(Type.Int(), g(env)(e1)); unify(Type.Int(), g(env)(e2)); Type.Int()
+        case Add(e1: T, e2: T) =>
+          val g1 = g(env)(e1)
+          unify(Type.Int(), g1)
+
+          val g2 = g(env)(e2)
+          unify(Type.Int(), g2)
+
+          //unify(Type.Int(), g(env)(e1))
+          //unify(Type.Int(), g(env)(e2))
+          Type.Int()
+
+        case Sub(e1, e2) =>
+         unify(Type.Int(), g(env)(e1)); unify(Type.Int(), g(env)(e2)); Type.Int()
 
         case FNeg(e1)
         => unify(Type.Float(), g(env)(e1)); Type.Float()
@@ -235,10 +199,11 @@ class Typing extends Syntax {
 
         case If(e1: T, e2: T, e3: T) =>
           unify(g(env)(e1), Type.Bool())
-          val t2 = g(env)(e2)
-          val t3 = g(env)(e3)
-          unify(t2, t3)
-          t2
+
+          val g2 = g(env)(e2)
+          val g3 = g(env)(e3)
+          unify(g2, g3)
+          g2
 
         case Let((x: Id.T, t: Type.T), e1: T, e2: T) =>
           unify(t, g(env)(e1))
@@ -255,24 +220,22 @@ class Typing extends Syntax {
           }
 
         case LetRec(Fundef((x, t), args, body), e2) =>
-          //val ev = env ++ fundefs.map(fd => fd.name)
           val ev = env+(x->t)
-          //fundefs.foreach(
-          //  fd => unify(
-//              fd.name._2,
-//              Type.Fun(fd.args.map(ag => ag._2),
-//                g(ev ++ fd.args)(fd.body))
-//            )
-          unify(t, Type.Fun(args.map(ag=>ag._2), g(ev++args)(body))
-          )
+          val hoge = Type.Fun(args.map(ag=>ag._2), g(ev++args)(body))
+          //unify(t, Type.Fun(args.map(ag=>ag._2), g(ev++args)(body)))
+          unify(t, hoge)
           g(ev)(e2)
-
+/*
         case App(e1, es) =>
-          val t = Type.gentyp()
+          println(" App", env)
+          println(" App", e1, es)
+          val t1 = Type.gentyp()
           val b = g(env)(e1)
-          unify(b, Type.Fun(es.map(g(env)), t))
-          t
-
+          println("  b", b)
+          println("  c", Type.Fun(es.map(g(env)), t1))
+          unify(b, Type.Fun(es.map(g(env)), t1))
+          t1
+*/
         case Tuple(es) =>
           Type.Tuple(es.map(g(env)))
 
@@ -297,28 +260,17 @@ class Typing extends Syntax {
           Type.Unit()
       }
     } catch {
-      case Unify((t1, t2)) => println("throw err");Type.Unit()//throw new Error
+      case Unify((t1, t2)) => println("throw typing err");Type.Unit()//throw new Error
 
     }
   }
 
   def f(e:T):T = {
     extenv = Map.empty[Id.T, Type.T]
-
     val result = g(Map.empty[Id.T, Type.T])(e)
+    println("result", e)
     val rc = deref_term(e)
-    println (rc)
     rc
-/*
-    val ddd = deref_typ(result)
-    println("deref:", ddd)
-
-    ddd match {
-      case Type.Unit() => Unit()
-      case _ => throw new Exception()
-    }
-*/
-
     /*
     try {
       unify(Type.Unit(), g(Map.empty[Id.T, Type.T])(e))

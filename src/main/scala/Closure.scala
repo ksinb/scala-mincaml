@@ -84,7 +84,6 @@ object Closure {
 
   var toplevel:List[Fundef] = List()
 
-
   def g(env:Map[Id.T, Type.T], known:Set[Id.T], e:KNormal.T):T = {
 
     e match {
