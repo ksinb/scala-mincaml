@@ -69,9 +69,8 @@ class Typing extends Syntax {
       case Type.Tuple(ts) => ts.exists(occur(r1))
       case Type.Array(t) => occur(r1)(t)
 
-      case Type.Var(t) if r1 == t =>
-
-        println("occccccc", None==None, r1, t)
+      case Type.Var(t) if t.isDefined && r1 == t =>
+        println("occccccc", r1, r2, t)
         true
       case Type.Var(t1) =>
         t1 match {
@@ -117,7 +116,7 @@ class Typing extends Syntax {
         println("r", r)
         if (occur(r1)(t2)) {
           println("  1occ", r1, t2)
-          //throw Unify(t)
+          throw Unify(t)
         } else {
           println("  1nop", r1, t2)
         }
@@ -128,7 +127,7 @@ class Typing extends Syntax {
         println("r", r)
         if (occur(r2)(t1)) {
           println("  2occ", r2, t1)
-          //throw Unify(t)
+          throw Unify(t)
         } else {
           println("  2nop", r2, t1)
         }
