@@ -122,7 +122,7 @@ object Closure {
             (known, e1r)
           }
 
-        val zsp = (Set() ++ yts.map(y=>y._1) + x) diff fv(e1q)
+        val zsp = fv(e1q) diff (Set() ++ yts.map(y=>y._1) + x)
         val zts = zsp.map(z=>(z, envp(z))).toList
         toplevel = Fundef((x, t), yts, zts, e1q) :: toplevel
         val e2p = g(envp, knownq, e2)

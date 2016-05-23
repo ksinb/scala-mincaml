@@ -51,40 +51,20 @@ object Alpha extends KNormal{
         val envp = yts.foldLeft(env1){ case (ep, (k, _)) => ep+(k->Id.genid(k)) }
         LetRec(
           Fundef(
-            (find(x, env), t),
+            (find(x, env1), t),
             yts.map{ case (y, t1) => (find(y, envp), t1) },
             g(envp, e1)
           ),
-          g(env, e2)
-        )
-/*
-      case LetRec(fundefs, e2) =>
-        val gt = fundefs.map(fd=>fd.name._1)
-        println("gt", gt)
-        val env1 = gt.foldLeft(env){ case (e1, k) => e1+(k->Id.genid(k)) }
-        println("env1", env1)
-        LetRec(
-          fundefs.map(fd=> {
-            val ys = fd.args.map(ag=>ag._1)
-            println("ys", ys)
-            val envp = ys.foldLeft(env){ case (e1, k) => e1+(k->Id.genid(k))}
-            println("envp", envp)
-            Fundef(
-              (find(fd.name._1, env1), fd.name._2),
-              fd.args.map(ag =>(find(ag._1, env1), ag._2)),
-              g(env1, fd.body)
-            )
-          }),
           g(env1, e2)
         )
-*/
+
       case App(x, ys) => App(find(x, env), ys.map((y)=>find(y, env)))
       case Tuple(xs) => Tuple(xs.map((x)=>find(x, env)))
 
       case LetTuple(xts, y, e2) =>
         val envp = xts.foldLeft(env){ case (e1, (k, _)) => e1+(k->Id.genid(k)) }
         LetTuple(
-          xts.map{ case (x, t) => (envp(x), t) },
+          xts.map{ case (x, t) => (find(x, envp), t) },
           find(y, env),
           g(envp, e2)
         )

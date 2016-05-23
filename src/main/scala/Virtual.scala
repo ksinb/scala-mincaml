@@ -11,20 +11,20 @@ object Virtual extends Asm{
 
     val typing = new Typing
     val tp = typing.f(pr.asInstanceOf[typing.T])
-/*
+
     val knormal = new KNormal
     val kn = knormal.f(tp.asInstanceOf[Syntax.T])
+
     val al = Alpha.f(kn.asInstanceOf[Alpha.T])
     val bt = Beta.f(al.asInstanceOf[Beta.T])
     val as = Assoc.f(bt.asInstanceOf[Assoc.T])
+
     val il = Inline.f(as.asInstanceOf[Inline.T])
     val cf = ConstFold.f(il.asInstanceOf[ConstFold.T])
     val el = Elim.f(cf.asInstanceOf[Elim.T])
     val cl = Closure.f(el.asInstanceOf[KNormal.T])
-*/
-    println("resssssssssss")
-    println(tp)
-    //println(f(cl))
+
+    println(f(cl))
   }
 
   object separate {
@@ -83,8 +83,6 @@ object Virtual extends Asm{
   }
 
   def g(env:Map[Id.T, Type.T], e:Closure.T):T = {
-    println("env "+env)
-    println("e "+e)
     e match {
       case Closure.Unit() => Ans(Nop())
       case Closure.Int(i) => Ans(Set(i))
@@ -114,31 +112,18 @@ object Virtual extends Asm{
       case Closure.IfEq(x, y, e1, e2) =>
         env(x) match {
           case Type.Bool() =>  Ans(IfEq(x, V(y), g(env, e1), g(env, e2)))
+          case Type.Int() =>  Ans(IfEq(x, V(y), g(env, e1), g(env, e2)))
           case Type.Float() =>  Ans(IfFEq(x, y, g(env, e1), g(env, e2)))
-          case _ => throw new Exception("equality supported only for bool, int, and float")
+          case _ => throw new Exception("IfEq: equality supported only for bool, int, and float")
         }
       case Closure.IfLE(x, y, e1, e2) =>
         env(x) match {
-          case Type.Bool() =>  Ans(IfEq(x, V(y), g(env, e1), g(env, e2)))
+          case Type.Bool() =>  Ans(IfLE(x, V(y), g(env, e1), g(env, e2)))
+          case Type.Int() =>  Ans(IfLE(x, V(y), g(env, e1), g(env, e2)))
           case Type.Float() =>  Ans(IfFLE(x, y, g(env, e1), g(env, e2)))
-          case _ => throw new Exception("equality supported only for bool, int, and float")
+          case _ => throw new Exception("IfLE: equality supported only for bool, int, and float")
         }
-        /*
-Prog(
-  List(
-    Fundef(
-      (double,Fun(List(Int()),Int())),
-      List((x.6.10,Int())),
-      List((double,Fun(List(Int()),Int()))),
-      Add(x.6.10,x.6.10))),
-    Let(
-      (Ti1.8,Int()),
-      Int(123),
-      Let(
-        (Ti2.7.11,Int()),
-        AppDir(double,List(Ti1.8)),
-        AppDir(double,List(Ti2.7.11)))))
-        */
+
       case Closure.Let((x, t1), e1, e2) =>
         val e1p = g(env, e1)
         val e2p = g(env+(x->t1), e2)
@@ -151,26 +136,8 @@ Prog(
           case _ => Ans(Mov(x))
         }
 
-      /*
-    Let(
-      (Ti1.9,Int()),
-      Int(3),
-      Let(
-        (Tf2.8,Fun(List(Int()),Int())),
-        MakeCls(
-          (adder,Fun(List(Int()),Int())),
-          Closure(adder,List(adder)),
-          Var(adder)
-        ),
-        Let(
-          (Ti3.10,Int()),
-          Int(7),
-          AppCls(Tf2.8,List(Ti3.10))))))
-        */
       case Closure.MakeCls((x, t), Closure.Closure(l, ys), e2) =>
-        println("makecls:env "+env+" ys "+ys)
         val e2p = g(env+(x->t), e2)
-        println("eee222pp "+e2p+ " env "+env+" y "+ys)
         val (offset, store_fv) = expand(
             ys.map(y=>(y, env(y))),
             (4, e2p),
@@ -239,7 +206,6 @@ Prog(
     }
   }
 
-
   def h(fund:Closure.Fundef) = {
     fund match {
       case Closure.Fundef((x, t), yts, zts, e) =>
@@ -250,30 +216,13 @@ Prog(
           (z, offset, load) => fletd(z, LdDF(x, C(offset), 1), load),
           (z, _, offset, load) => Let((z, t),  Ld(x, C(offset), 1), load)
         )
-
         t match {
           case Type.Fun(_, t2) => Fundef(x, int, float, load, t2)
           case _ => throw new Exception("false")
         }
     }
   }
-/*
 
-    Let(
-      (Ti1.9,Int()),
-      Int(3),
-      Let(
-        (Tf2.8,Fun(List(Int()),Int())),
-        MakeCls(
-          (adder,Fun(List(Int()),Int())),
-          Closure(adder,List(adder)),
-          Var(adder)
-        ),
-        Let(
-          (Ti3.10,Int()),
-          Int(7),
-          AppCls(Tf2.8,List(Ti3.10))))))
-*/
   def f(prg:Closure.Prog):Prog = {
     prg match {
       case Closure.Prog(fd:List[Closure.Fundef], e:Closure.T) =>
