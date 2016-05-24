@@ -44,7 +44,7 @@ class Asm {
   case class Restore(a:Id.T) extends Exp
 
   case class Fundef(name:Id.L, args:List[Id.L], fargs:List[Id.T], body:T, ret:Type.T) extends Exp
-  case class Prog(a:List[(Id.L, Double)], b:List[Fundef], c:T) extends Exp
+  case class Prog(data:List[(Id.L, Double)], fundefs:List[Fundef], e:T) extends Exp
 
   def fletd(x:Id.T, e1:Exp, e2:T):T = Let((x, Type.Float()), e1, e2)
 
@@ -111,14 +111,22 @@ class Asm {
     }
 
   def fv(cont:List[Id.T], e:T):List[Id.T] =
+    remove_and_uniq(List(), fv(e))
+    /*
     e match {
       case Ans(exp) => fv_exp(exp)
       case Let((x,t), exp, e1) =>
         fv_exp(exp) ++ remove_and_uniq(List(x), fv(e1))
     }
+    */
 
   def fv(e:T):List[Id.T] =
-    remove_and_uniq(List(), fv(e))
+    e match {
+      case Ans(exp) => fv_exp(exp)
+      case Let((x,t), exp, e1) =>
+        fv_exp(exp) ++ remove_and_uniq(List(x), fv(e1))
+    }
+    //remove_and_uniq(List(), fv(e))
 
   def concat(e1:T, xt:(Id.T, Type.T), e2:T):T =
     e1 match {

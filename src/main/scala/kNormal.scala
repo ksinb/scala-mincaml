@@ -97,7 +97,10 @@ class KNormal {
   def g(env:Map[Id.T, Type.T], t0:Syntax.T):(T, Type.T) = {
     t0 match {
       case Syntax.Unit() => (Unit(), Type.Unit())
-      //case Syntax.Bool(b) => Int(1)
+      case Syntax.Bool(b) =>
+        if (b) (Int(1), Type.Int())
+        else (Int(0), Type.Int())
+
       case Syntax.Int(i) => (Int(i), Type.Int())
       case Syntax.Float(d) => (Float(d), Type.Float())
       case Syntax.Not(e)
@@ -149,14 +152,8 @@ class KNormal {
           )
         )
 
-      case Syntax.If(Syntax.NEq(e1, e2), e3, e4)
-      => g(env, Syntax.If(Syntax.Eq(e1, e2), e4, e3))
-
-      case Syntax.If(Syntax.Lt(e1, e2), e3, e4)
-      => g(env, Syntax.If(Syntax.LE(e2, e1), e4, e3))
-
       case Syntax.If(Syntax.LE(e1, e2), e3, e4) =>
-        insert_let(g(env, e2),
+        insert_let(g(env, e1),
           (x: Id.T) => insert_let(g(env, e2),
             (y: Id.T) => {
               val (e3p, t3) = g(env, e3)
@@ -167,7 +164,7 @@ class KNormal {
         )
 
       case Syntax.If(e1, e2, e3)
-      => g(env, Syntax.If(Syntax.NEq(e1, Syntax.Bool(false)), e2, e3))
+      => g(env, Syntax.If(Syntax.Eq(e1, Syntax.Bool(false)), e3, e2))
 
       case Syntax.Let((x, t), e1, e2) =>
         val (e1p, _) = g(env, e1)
@@ -192,20 +189,7 @@ class KNormal {
           e2p),
           t2
         )
-/*
-      case Syntax.LetRec(fundefs, e2) =>
-        val env1 = env ++ fundefs.map(fd=>fd.name)
-        val (e2p, t2) = g(env1, e2)
-        (
-          LetRec(
-            fundefs.map(fd => {
-              val (e1p, _) = g(env1 ++ fd.args, fd.body)
-              Fundef(fd.name, fd.args, e1p)
-            }),
-            e2p),
-          t2
-        )
-*/
+
       case Syntax.App(Syntax.Var(f), e1s) if !env.contains(f) =>
         Typing.extenv(f) match {
           case Type.Fun(_, t) =>
