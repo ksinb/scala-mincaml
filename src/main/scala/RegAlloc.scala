@@ -26,8 +26,6 @@ object RegAlloc extends RegAlloc {
     val vt = Virtual.f(cl)
     val sm = Simm.f(vt.asInstanceOf[Simm.Prog])
     println(sm)
-println("hge")
-
     println(f(sm.asInstanceOf[RegAlloc.Prog]))
   }
 }
