@@ -55,7 +55,7 @@ class Asm {
   val allregs = regs.toList
   val allfregs = fregs.toList
   val reg_cl = regs(regs.length -1)
-  val reg_sqp = "%ebp"
+  val reg_sp = "%ebp"
   val reg_hp = "min_caml_hp"
   def is_reg(x:String):Boolean = x(0) == '%' || x == reg_hp
 
