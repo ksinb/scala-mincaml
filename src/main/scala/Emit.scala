@@ -23,19 +23,14 @@ object Emit extends Emit {
     val vt = Virtual.f(cl)
     val sm = Simm.f(vt.asInstanceOf[Simm.Prog])
     val ra = RegAlloc.f(sm.asInstanceOf[RegAlloc.Prog])
-    println(ra)
-
     val bar = new PrintWriter(System.out)
-
     f(bar, ra.asInstanceOf[Prog])
-    //bar.close()
   }
 }
 
 
 class Emit extends Asm {
   type out_channel = PrintWriter
-
 
   var stackset = scala.collection.immutable.Set[Id.T]()
   var stackmap = List[Id.T]()
@@ -84,7 +79,7 @@ class Emit extends Asm {
     4 * locate(x).head
   }
 
-  def stacksize():Int = align((stackmap.length+1)* 4)
+  def stacksize():Int = align(stackmap.length* 4)
 
   def pp_id_or_imm(e:id_or_imm):String = {
     e match {
@@ -126,51 +121,66 @@ class Emit extends Asm {
 
     e match {
       case (NonTail(_), Nop()) =>
+
       case (NonTail(x), Set(i)) =>
         oc.println("\tmovl\t$%d, %s".format(i, x))
+
       case (NonTail(x), SetL(y)) =>
         oc.println("\tmovl\t$%s, %s".format(y, x))
+
       case (NonTail(x), Mov(y)) =>
         if (x != y) {
-          oc.println("\tmovl\t$%s, %s".format(y, x))
+          oc.println("\tmovl\t%s, %s".format(y, x))
         }
+
       case (NonTail(x), Neg(y)) =>
-        oc.println("\tmovl\t$%s, %s".format(y, x))
+        if (x != y) {
+          oc.println("\tmovl\t%s, %s".format(y, x))
+        }
         oc.println("\tnegl\t%s".format(x))
+
       case (NonTail(x), Add(y, zp)) =>
-        if (V(x) != zp) {
-          oc.println("\talld\t$%s, %s".format(y, x))
+        if (x == pp_id_or_imm(zp)) {
+          oc.println("\taddl\t%s, %s".format(y, x))
         } else {
           if (x != y) {
-            oc.println("\tmovl\t$%s, %s".format(y, x))
+            oc.println("\tmovl\t%s, %s".format(y, x))
           }
           oc.println("\taddl\t%s, %s".format(pp_id_or_imm(zp), x))
         }
+
       case (NonTail(x), Sub(y, zp)) =>
-        if (V(x) != zp) {
-          oc.println("\tsubl\t$%s, %s".format(y, x))
-          oc.println("\tnegl\t$%s".format(x))
+        if (x == pp_id_or_imm(zp)) {
+          oc.println("\tsubl\t%s, %s".format(y, x))
+          oc.println("\tnegl\t%s".format(x))
         } else {
           if (x != y) {
-            oc.println("\tmovl\t$%s, %s".format(y, x))
+            oc.println("\tmovl\t%s, %s".format(y, x))
           }
           oc.println("\tsubl\t%s, %s".format(pp_id_or_imm(zp), x))
         }
+
       case (NonTail(x), Ld(y, V(z), i)) =>
         oc.println("\tmovl\t(%s, %s, %d), %s".format(y, z, i, x))
+
       case (NonTail(x), Ld(y, C(j), i)) =>
-        oc.println("\tmovl\t%d(%s), %s".format(j*i, y, x))
+        oc.println("\tmovl\t%d(%s), %s".format(j * i, y, x))
+
       case (NonTail(_), St(x, y, V(z), i)) =>
         oc.println("\tmovl\t%s, (%s, %s, %d)".format(x, y, z, i))
+
       case (NonTail(_), St(x, y, C(j), i)) =>
-        oc.println("\tmovl\t%s, %d(%s)".format(x, j*i, y))
+        oc.println("\tmovl\t%s, %d(%s)".format(x, j * i, y))
+
       case (NonTail(x), FMovD(y)) if x != y =>
         oc.println("\tmovsd\t%s, %s".format(y, x))
+
       case (NonTail(x), FNegD(y)) =>
         if (x != y) {
           oc.println("\tmovsd\t%s, %s".format(y, x))
         }
         oc.println("\txorpd\tmin_caml_fnegd, %s".format(x))
+
       case (NonTail(x), FAddD(y, z)) =>
         if (x == z) {
           oc.println("\taddsd\t%s, %s".format(y, x))
@@ -180,6 +190,8 @@ class Emit extends Asm {
           }
           oc.println("\taddsd\t%s, %s".format(z, x))
         }
+
+
       case (NonTail(x), FSubD(y, z)) =>
         if (x == z) {
           val ss = stacksize()
@@ -194,18 +206,20 @@ class Emit extends Asm {
           }
           oc.println("\tsubsd\t%s, %s".format(z, x))
         }
+
       case (NonTail(x), FMulD(y, z)) =>
         if (x == z) {
           oc.println("\tmulsd\t%s, %s".format(y, x))
         } else {
           if (x != y) {
-            oc.println("\tmovd\t%s, %s".format(y, x))
+            oc.println("\tmovsd\t%s, %s".format(y, x))
           }
           oc.println("\tmulsd\t%s, %s".format(z, x))
         }
+
       case (NonTail(x), FDivD(y, z)) =>
-        val ss = stacksize()
         if (x == z) {
+          val ss = stacksize()
           oc.println("\tmovsd\t%s, %d(%s)".format(z, ss, reg_sp))
           if (x != y) {
             oc.println("\tmovsd\t%s, %s".format(y, x))
@@ -213,54 +227,71 @@ class Emit extends Asm {
           oc.println("\tdivsd\t%d(%s), %s".format(ss, reg_sp, x))
         } else {
           if (x != y) {
-            oc.println("\tmovd\t%s, %s".format(y, x))
+            oc.println("\tmovsd\t%s, %s".format(y, x))
           }
           oc.println("\tdivsd\t%s, %s".format(z, x))
         }
 
       case (NonTail(x), LdDF(y, V(z), i)) =>
         oc.println("\tmovsd\t(%s, %s, %d), %s".format(y, z, i, x))
+
       case (NonTail(x), LdDF(y, C(j), i)) =>
         oc.println("\tmovsd\t%d(%s), %s".format(j*i, y, x))
+
       case (NonTail(_), StDF(x, y, V(z), i)) =>
         oc.println("\tmovsd\t%s, (%s, %s, %d)\n".format(x, y, z, i))
+
       case (NonTail(_), StDF(x, y, C(j), i)) =>
         oc.println("\tmovsd\t%s, %d(%s)".format(x, j*i, y))
+
       case (NonTail(_), Save(x, y)) if allregs.contains(x) && !stackset.contains(y) =>
         save(y)
         oc.println("\tmovl\t%s, %d(%s)".format(x, offset(y), reg_sp))
+
       case (NonTail(_), Save(x, y)) if allfregs.contains(x) && !stackset.contains(y) =>
         savef(y)
         oc.println("\tmovsd\t%s, %d(%s)".format(x, offset(y), reg_sp))
+
+      case (NonTail(x), Restore(y)) if allregs.contains(x) =>
+        oc.println("\tmovl\t%d(%s), %s".format(offset(y), reg_sp, x))
+
       case (NonTail(x), Restore(y)) =>
         oc.println("\tmovsd\t%d(%s), %s".format(offset(y), reg_sp, x))
 
       case (Tail(), exp@(Nop()|St(_,_,_,_)|StDF(_,_,_,_)|Save(_,_)) ) =>
-        gp(oc, (NonTail(regs(0)), exp))
+        gp(oc, (NonTail(Id.gentmp(Type.Unit())), exp))
         oc.println("\tret")
+
       case (Tail(), exp@(Set(_)|SetL(_)|Mov(_)|Neg(_)|Add(_,_)|Sub(_,_)|Ld(_,_,_))) =>
         gp(oc, (NonTail(regs(0)), exp))
         oc.println("\tret")
+
       case (Tail(), exp@(FMovD(_)|FNegD(_)|FAddD(_,_)|FSubD(_,_)|FMulD(_,_)|FDivD(_,_)|LdDF(_,_,_))) =>
-        gp(oc, (NonTail(regs(0)), exp))
+        gp(oc, (NonTail(fregs(0)), exp))
         oc.println("\tret")
+
       case (Tail(), exp@Restore(x)) =>
         locate(x) match {
           case List(i) => gp(oc, (NonTail(regs(0)), exp))
           case i :: List(j) if i + 1 == j => gp(oc, (NonTail(fregs(0)), exp))
         }
+
       case (Tail(), IfEq(x, yp, e1, e2)) =>
         oc.println("\tcmpl\t%s, %s".format(pp_id_or_imm(yp), x))
         g_tail_if(oc, e1, e2, "je", "jne")
+
       case (Tail(), IfLE(x, yp, e1, e2)) =>
         oc.println("\tcmpl\t%s, %s".format(pp_id_or_imm(yp), x))
         g_tail_if(oc, e1, e2, "jle", "jg")
+
       case (Tail(), IfGE(x, yp, e1, e2)) =>
         oc.println("\tcmpl\t%s, %s".format(pp_id_or_imm(yp), x))
         g_tail_if(oc, e1, e2, "jge", "jl")
+
       case (Tail(), IfFEq(x, y, e1, e2)) =>
         oc.println("\tcomisd\t%s, %s".format(y, x))
         g_tail_if(oc, e1, e2, "je", "jne")
+
       case (Tail(), IfFLE(x, y, e1, e2)) =>
         oc.println("\tcomisd\t%s, %s".format(y, x))
         g_tail_if(oc, e1, e2, "jbe", "ja")
@@ -268,21 +299,27 @@ class Emit extends Asm {
       case (NonTail(z), IfEq(x, yp, e1, e2)) =>
         oc.println("\tcmpl\t%s, %s".format(pp_id_or_imm(yp), x))
         g_non_tail_if(oc, NonTail(z), e1, e2, "je", "jne")
+
       case (NonTail(z), IfLE(x, yp, e1, e2)) =>
         oc.println("\tcmpl\t%s, %s".format(pp_id_or_imm(yp), x))
         g_non_tail_if(oc, NonTail(z), e1, e2, "jle", "jg")
+
       case (NonTail(z), IfGE(x, yp, e1, e2)) =>
         oc.println("\tcmpl\t%s, %s".format(pp_id_or_imm(yp), x))
         g_non_tail_if(oc, NonTail(z), e1, e2, "jge", "jl")
+
       case (NonTail(z), IfFEq(x, y, e1, e2)) =>
         oc.println("\tcmpl\t%s, %s".format(y, x))
         g_non_tail_if(oc, NonTail(z), e1, e2, "je", "jne")
+
       case (NonTail(z), IfFLE(x, y, e1, e2)) =>
         oc.println("\tcmpl\t%s, %s".format(y, x))
         g_non_tail_if(oc, NonTail(z), e1, e2, "jbe", "ja")
+
       case (Tail(), CallCls(x, ys, zs)) =>
         g_args(oc, List((x, reg_cl)), ys, zs)
         oc.println("\tjmp\t*(%s)".format(reg_cl))
+
       case (Tail(), CallDir(x, ys, zs)) =>
         g_args(oc, List(), ys, zs)
         oc.println("\tjmp\t%s".format(x))
@@ -305,7 +342,7 @@ class Emit extends Asm {
           oc.println("\tmovsd\t%s, %s".format(fregs(0), a))
         }
 
-      case (NonTail(a), CallDir(x, ys,zs)) =>
+      case (NonTail(a), CallDir(x, ys, zs)) =>
         g_args(oc, List(), ys, zs)
         val ss = stacksize()
         if (ss > 0) {
@@ -368,11 +405,11 @@ class Emit extends Asm {
     shuffle(sw, yrs).foreach{
       case (y, r) => oc.println("\tmovl\t%s, %s".format(y, r))
     }
-    val (d, zfrs) = ys.foldLeft((0, x_reg_cl)){
-      case ((dp, zrfs), z) => (dp+1, (z, fregs(dp)) :: zrfs)
+    val (d, zfrs) = zs.foldLeft((0, List[(Id.T, String)]())){
+      case ((dp, zfs), z) => (dp+1, (z, fregs(dp)) :: zfs)
     }
     shuffle(sw, zfrs).foreach{
-      case (z, fr) => oc.println("\tmovsd\t%s, %s".format(z, fr))
+      case (z, fr) => oc.println("\tmovsdxxx\t%s, %s".format(z, fr))
     }
   }
 
@@ -406,26 +443,26 @@ class Emit extends Asm {
         oc.println("mincaml_start:")
         oc.println(".globl\t_min_caml_start")
         oc.println("_min_caml_start: # for cygwin")
-        oc.println("\tpushl\t%%eax")
-        oc.println("\tpushl\t%%ebx")
-        oc.println("\tpushl\t%%ecx")
-        oc.println("\tpushl\t%%edx")
-        oc.println("\tpushl\t%%esi")
-        oc.println("\tpushl\t%%edi")
-        oc.println("\tpushl\t%%ebp")
+        oc.println("\tpushl\t%eax")
+        oc.println("\tpushl\t%ebx")
+        oc.println("\tpushl\t%ecx")
+        oc.println("\tpushl\t%edx")
+        oc.println("\tpushl\t%esi")
+        oc.println("\tpushl\t%edi")
+        oc.println("\tpushl\t%ebp")
         oc.println("\tmovl\t32(%%esp), %s".format(reg_sp))
         oc.println("\tmovl\t36(%%esp), %s".format(regs(0)))
-        oc.println("\tmovl\t%s, %s".format(regs(0), reg_hp))
+        oc.println("\tmovl\t%s,%s".format(regs(0), reg_hp))
         stackset = scala.collection.immutable.Set[Id.T]()
         stackmap = List[Id.T]()
         g(oc, (NonTail(regs(0)), e))
-        oc.println("\tpopl\t%%ebp")
-        oc.println("\tpopl\t%%edi")
-        oc.println("\tpopl\t%%esi")
-        oc.println("\tpopl\t%%edx")
-        oc.println("\tpopl\t%%ecx")
-        oc.println("\tpopl\t%%ebx")
-        oc.println("\tpopl\t%%eax")
+        oc.println("\tpopl\t%ebp")
+        oc.println("\tpopl\t%edi")
+        oc.println("\tpopl\t%esi")
+        oc.println("\tpopl\t%edx")
+        oc.println("\tpopl\t%ecx")
+        oc.println("\tpopl\t%ebx")
+        oc.println("\tpopl\t%eax")
         oc.println("\tret")
     }
     oc.close()

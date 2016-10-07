@@ -68,8 +68,8 @@ class Asm {
 
   def fv_id_or_imm(a:id_or_imm):List[Id.T] =
     a match {
-    case V(x) => List(x)
-    case _ => List()
+      case V(x) => List(x)
+      case _ => List()
   }
 
   def fv_exp(e:Exp):List[Id.T] =
@@ -110,15 +110,7 @@ class Asm {
       case CallDir(_, ys, zs) => ys ::: zs
     }
 
-  def fv(cont:List[Id.T], e:T):List[Id.T] =
-    remove_and_uniq(List(), fv(e))
-    /*
-    e match {
-      case Ans(exp) => fv_exp(exp)
-      case Let((x,t), exp, e1) =>
-        fv_exp(exp) ++ remove_and_uniq(List(x), fv(e1))
-    }
-    */
+  def fv(cont:List[Id.T], e:T):List[Id.T] = remove_and_uniq(List(), fv(e))
 
   def fv(e:T):List[Id.T] =
     e match {
@@ -126,7 +118,6 @@ class Asm {
       case Let((x,t), exp, e1) =>
         fv_exp(exp) ++ remove_and_uniq(List(x), fv(e1))
     }
-    //remove_and_uniq(List(), fv(e))
 
   def concat(e1:T, xt:(Id.T, Type.T), e2:T):T =
     e1 match {
