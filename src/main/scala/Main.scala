@@ -17,18 +17,19 @@ object Main {
     }
   }
 
-  def lexbuf(outchan:PrintWriter):Unit = {
+  def lexbuf(outchan:PrintWriter, inchan:FileReader):Unit = {
     Id.counter = 0
     Typing.extenv = Map()
 
-    Emit(outchan, RegAlloc(Simm(Virtual(Closure(iter(limit, Alpha(KNormal(Typing(Parser())))))))))
+    Emit(outchan, RegAlloc(Simm(Virtual(Closure(iter(limit, Alpha(KNormal(Typing(Parser(inchan))))))))))
   }
 
   def file(f:String):Unit = {
     val inchain = new FileReader(f+".ml")
     val outchain = new FileWriter(f+".s")
+
     try {
-      //lexbuf(new PrintWriter(new BufferedWriter(outchain)), inchain)
+      lexbuf(new PrintWriter(new BufferedWriter(outchain)), inchain)
       inchain.close()
       outchain.close()
     } catch {
@@ -37,10 +38,7 @@ object Main {
   }
 
   def main(argv:Array[String]):Unit = {
-    println("HOge")
-    lexbuf(new PrintWriter(System.out))
 
-    /*
     def arg(l:List[String], rc:List[String]):List[String] = l match {
       case List() => rc
       case "-inline"::x::xs => Inline.threshold = x.toInt; arg(xs, rc)
@@ -50,8 +48,7 @@ object Main {
 
     arg(argv.toList, List()) match {
       case List() => println("Usage: mincaml [-inline m] [-iter n] ...filenames without \".ml\"...")
-      case files => files.foreach{file(_)}
+      case files => files.foreach(file)
     }
-*/
   }
 }
