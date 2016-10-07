@@ -1,27 +1,7 @@
 package mincaml
 
 object Beta extends KNormal{
-/*
-  def main(args:Array[String]) = {
-    /*
-    val hoge = Syntax.Let(("a", Type.Int()), Syntax.Int(1),
-    Syntax.Let(("a", Type.Int()), Syntax.Int(2),
-      Syntax.Let(("b", Type.Int()), Syntax.Int(3),
-        Syntax.Let(("b", Type.Int()), Syntax.Int(4), Syntax.Sub(Syntax.Add(Syntax.Add(Syntax.Var("a"), Syntax.Var("a")), Syntax.Var("b")), Syntax.Var("b"))))))
-*/
-    val hoge = Syntax.Let(("y",Type.Int()),Syntax.Int(3),Syntax.Let(("x",Type.Int()),Syntax.Var("y"),Syntax.Add(Syntax.Var("x"),Syntax.Var("y"))))
 
-    val kn = new KNormal
-    val d = kn.f(hoge)
-    println(d)
-
-    val al = Alpha.f(d.asInstanceOf[Alpha.T])
-    println(al)
-
-    val bt = Beta.f(al.asInstanceOf[T])
-    println(bt)
-  }
-*/
   def apply(e:KNormal.T):KNormal.T = {
     g(Map[Id.T, Id.T](), e.asInstanceOf[Beta.T]).asInstanceOf[KNormal.T]
   }
@@ -84,7 +64,5 @@ object Beta extends KNormal{
     }
   }
 
-  def f(e:T):T = {
-    g(Map.empty[Id.T, Id.T], e)
-  }
+  def f(e:T):T = g(Map.empty[Id.T, Id.T], e)
 }
