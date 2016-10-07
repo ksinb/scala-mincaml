@@ -1,28 +1,8 @@
 package mincaml
 
 object Inline extends KNormal{
-/*
-  def main(args:Array[String]) = {
 
-    val parser = new Parser
-    val pr = parser.parse("let rec fact n = if n = 0 then 1 else n + fact (n-1) in fact 3")
-
-    val typing = new Typing
-    val tp = typing.f(pr.asInstanceOf[typing.T])
-
-    val knormal = new KNormal
-    val kn= knormal.f(tp.asInstanceOf[Syntax.T])
-    val al = Alpha.f(kn.asInstanceOf[Alpha.T])
-    val bt = Beta.f(al.asInstanceOf[Beta.T])
-    val as = Assoc.f(bt.asInstanceOf[Assoc.T])
-
-    println(as)
-    println(f(as.asInstanceOf[T]))
-  }
-*/
   var threshold = 0
-
-  def apply(e:Inline.T):ConstFold.T = f(e).asInstanceOf[ConstFold.T]
 
   def size(e:T):scala.Int = {
     e match {
@@ -77,8 +57,9 @@ object Inline extends KNormal{
     }
   }
 
-
   def f(e:T):T = {
     g(Map.empty[Id.T, (List[(Id.T, Type.T)], T)], e)
   }
+
+  def apply(e:Inline.T):ConstFold.T = f(e).asInstanceOf[ConstFold.T]
 }
