@@ -125,6 +125,5 @@ class Asm {
       case Let(yt, exp, e1p) => Let(yt, exp, concat(e1p, xt, e2))
     }
 
-  def align(i:Int):Int =
-    if (i % 8 == 0) i else i+4
+  def align(i:Int):Int = if (i % 8 == 0) i else i+4
 }

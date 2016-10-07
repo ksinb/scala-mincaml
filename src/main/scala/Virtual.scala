@@ -1,8 +1,11 @@
 package mincaml
 
 object Virtual extends Asm{
+
+
   var data = List[(Id.L, Double)]()
 
+  /*
   def main(args:Array[String]) = {
     val parser = new Parser
     val pr = parser.parse("let rec fib n = if n <= 1 then n else fib(n - 1) + fib(n -2) in fib 10")
@@ -25,7 +28,9 @@ object Virtual extends Asm{
     val cl = Closure.f(el.asInstanceOf[KNormal.T])
 
     println(f(cl))
+
   }
+*/
 
   object separate {
     type TA = Id.T
@@ -232,4 +237,7 @@ object Virtual extends Asm{
         Prog(data, fundefs, ep)
     }
   }
+
+  def apply(e:Closure.Prog) = f(e).asInstanceOf[Simm.Prog]
+
 }

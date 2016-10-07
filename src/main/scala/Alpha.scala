@@ -1,7 +1,7 @@
 package mincaml
 
 object Alpha extends KNormal{
-
+/*
   def main(args:Array[String]) = {
     val hoge = Syntax.Let(("a", Type.Int()), Syntax.Int(1),
       Syntax.Let(("a", Type.Int()), Syntax.Int(2),
@@ -11,6 +11,10 @@ object Alpha extends KNormal{
     val d = kn.f(hoge)
     println(d)
     println(f(d.asInstanceOf[T]))
+  }
+*/
+  def apply(e:KNormal.T):KNormal.T = {
+    g(Map[Id.T, Id.T](), e.asInstanceOf[T]).asInstanceOf[KNormal.T]
   }
 
   def f(e:T):T = {

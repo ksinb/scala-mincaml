@@ -4,28 +4,25 @@ import java.util.NoSuchElementException
 
 object ConstFold extends KNormal{
 
+  /*
   def main(args:Array[String]) = {
-
     val parser = new Parser
     val pr = parser.parse("let rec fact n = if n = 0 then 1 else n + fact (n-1) in fact 3")
-
     val typing = new Typing
     val tp = typing.f(pr.asInstanceOf[typing.T])
-
     val knormal = new KNormal
     val kn = knormal.f(tp.asInstanceOf[Syntax.T])
-
     val al = Alpha.f(kn.asInstanceOf[Alpha.T])
-
     val bt = Beta.f(al.asInstanceOf[Beta.T])
-
     val as = Assoc.f(bt.asInstanceOf[Assoc.T])
-
     val il = Inline.f(as.asInstanceOf[Inline.T])
-
     println(f(il.asInstanceOf[ConstFold.T]))
   }
+*/
 
+  def apply(e:T):Elim.T = {
+    g(Map[Id.T, T](), e).asInstanceOf[Elim.T]
+  }
 
   def memi(x:Id.T, env:Map[Id.T, T]):scala.Boolean = {
     try {
@@ -88,11 +85,11 @@ object ConstFold extends KNormal{
   }
 
   def foldLeft2(
-                 env:T,
-                 zs:List[(Id.T, Type.T)],
-                 ys:List[Id.T],
-                 f1:(T, (Id.T, Type.T), Id.T) => T
-               ):T = {
+      env:T,
+      zs:List[(Id.T, Type.T)],
+      ys:List[Id.T],
+      f1:(T, (Id.T, Type.T), Id.T) => T
+    ):T = {
 
     (zs, ys) match {
       case (z::List(), y::List()) => f1(env, z, y)
@@ -137,7 +134,6 @@ object ConstFold extends KNormal{
 
       case LetRec(Fundef(name, args, body), e2) =>
         LetRec(
-          //bindings.map(bd=>Fundef(bd.name, bd.args, g(env, bd.body))),
           Fundef(name, args, g(env, body)),
           g(env, e2)
         )

@@ -1,7 +1,7 @@
 package mincaml
 
 object Simm extends Simm{
-
+/*
   def main(args: Array[String]) = {
     val parser = new Parser
     val pr = parser.parse("let rec fib n = if n <= 1 then n else fib(n - 1) + fib(n -2) in fib 10")
@@ -25,6 +25,10 @@ object Simm extends Simm{
     val vt = Virtual.f(cl)
 
     println(f(vt.asInstanceOf[Simm.Prog]))
+  }
+  */
+  def apply(e:Simm.Prog):RegAlloc.Prog = {
+    f(e).asInstanceOf[RegAlloc.Prog]
   }
 }
 

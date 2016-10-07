@@ -1,7 +1,7 @@
 package mincaml
 
 object Inline extends KNormal{
-
+/*
   def main(args:Array[String]) = {
 
     val parser = new Parser
@@ -19,8 +19,10 @@ object Inline extends KNormal{
     println(as)
     println(f(as.asInstanceOf[T]))
   }
-
+*/
   var threshold = 0
+
+  def apply(e:Inline.T):ConstFold.T = f(e).asInstanceOf[ConstFold.T]
 
   def size(e:T):scala.Int = {
     e match {

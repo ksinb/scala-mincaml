@@ -3,6 +3,7 @@ package mincaml
 import java.io.PrintWriter
 
 object Emit extends Emit {
+  /*
   def main(args: Array[String]) = {
     val parser = new Parser
     val pr = parser.parse("let rec fib n = if n <= 1 then n else fib(n - 1) + fib(n -2) in fib 10")
@@ -26,6 +27,8 @@ object Emit extends Emit {
     val bar = new PrintWriter(System.out)
     f(bar, ra.asInstanceOf[Prog])
   }
+  */
+  def apply(oc:out_channel, e:Prog) = f(oc, e)
 }
 
 

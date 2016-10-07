@@ -1,7 +1,7 @@
 package mincaml
 
 object Beta extends KNormal{
-
+/*
   def main(args:Array[String]) = {
     /*
     val hoge = Syntax.Let(("a", Type.Int()), Syntax.Int(1),
@@ -20,6 +20,10 @@ object Beta extends KNormal{
 
     val bt = Beta.f(al.asInstanceOf[T])
     println(bt)
+  }
+*/
+  def apply(e:KNormal.T):KNormal.T = {
+    g(Map[Id.T, Id.T](), e.asInstanceOf[Beta.T]).asInstanceOf[KNormal.T]
   }
 
   def find(x:Id.T, env:Map[Id.T, Id.T]) = {
@@ -54,8 +58,6 @@ object Beta extends KNormal{
         }
 
       case LetRec(fundef, ep) =>
-        //val fds = fundefs.map(fd=>Fundef(fd.name, fd.args, g(env, fd.body)))
-        //LetRec(fds, g(env, ep))
         LetRec(fundef, g(env, ep))
 
       case Var(x) =>

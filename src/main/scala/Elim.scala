@@ -1,7 +1,7 @@
 package mincaml
 
 object Elim extends KNormal{
-
+/*
   def main(args:Array[String]) = {
 
     val parser = new Parser
@@ -72,6 +72,10 @@ object Elim extends KNormal{
           App(double,List(Ti2.7.11)))))
 */
   }
+*/
+    def apply(e:T):KNormal.T = {
+      f(e).asInstanceOf[KNormal.T]
+    }
 
     def effect(e:T):scala.Boolean = {
       e match {

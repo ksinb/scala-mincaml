@@ -3,6 +3,7 @@ package mincaml
 import java.util.NoSuchElementException
 
 object RegAlloc extends RegAlloc {
+  /*
   def main(args: Array[String]) = {
     val parser = new Parser
     val pr = parser.parse("let rec fib n = if n <= 1 then n else fib(n - 1) + fib(n -2) in fib 10")
@@ -28,6 +29,8 @@ object RegAlloc extends RegAlloc {
     println(sm)
     println(f(sm.asInstanceOf[RegAlloc.Prog]))
   }
+  */
+  def apply(e:Prog):Emit.Prog = f(e).asInstanceOf[Emit.Prog]
 }
 
 class RegAlloc extends Asm {

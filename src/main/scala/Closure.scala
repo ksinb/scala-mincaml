@@ -33,6 +33,7 @@ object Closure {
   case class Fundef(name:(Id.T, Type.T), args:List[(Id.T, Type.T)], formal_fv:List[(Id.T, Type.T)], body:T) extends T
   case class Prog(l:List[Fundef], t:T) extends T
 
+  /*
   def main(args:Array[String]) = {
     val parser = new Parser
     //val pr = parser.parse("let rec quad x = let rec double x = x + x in double (double x) in quad 123")
@@ -50,6 +51,13 @@ object Closure {
     val cf = ConstFold.f(il.asInstanceOf[ConstFold.T])
     val el = Elim.f(cf.asInstanceOf[Elim.T])
     val cl = f(el.asInstanceOf[KNormal.T])
+  }
+  */
+
+  def apply(e:KNormal.T) = {
+    toplevel = List()
+    val ep = g(Map(), Set(), e)
+    Prog(toplevel.reverse, ep)
   }
 
   def fv(e:T):Set[Id.T] = {

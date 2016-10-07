@@ -1,7 +1,10 @@
 package mincaml
 
-object Typing {
-  var extenv = Map[Id.T, Type.T]()
+object Typing extends Typing {
+  //var extenv = Map[Id.T, Type.T]()
+  def apply(e:Syntax.T):Syntax.T = {
+    f(e.asInstanceOf[Typing.T]).asInstanceOf[Syntax.T]
+  }
 }
 
 class Typing extends Syntax {
