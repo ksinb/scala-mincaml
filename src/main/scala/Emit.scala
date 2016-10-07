@@ -73,7 +73,7 @@ class Emit extends Asm {
       case (List(), List()) => List()
 
       case ((x, y) :: xys2, List()) =>
-        (y, sw) ::(x, y) :: shuffle(sw, xys.map {
+        (y, sw) ::(x, y) :: shuffle(sw, xys2.map {
           case (yp, z) if yp == y => (sw, z)
           case yz => yz
         })
