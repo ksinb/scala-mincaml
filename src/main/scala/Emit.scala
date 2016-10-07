@@ -3,31 +3,6 @@ package mincaml
 import java.io.PrintWriter
 
 object Emit extends Emit {
-  /*
-  def main(args: Array[String]) = {
-    val parser = new Parser
-    val pr = parser.parse("let rec fib n = if n <= 1 then n else fib(n - 1) + fib(n -2) in fib 10")
-    //val pr = parser.parse("let rec quad x = let rec double x = x + x in double (double x) in quad 123")
-    //val pr = parser.parse("let rec make_adder x = let rec adder y = x + y in adder in (make_adder 3) 7")
-
-    val typing = new Typing
-    val tp = typing.f(pr.asInstanceOf[typing.T])
-    val knormal = new KNormal
-    val kn = knormal.f(tp.asInstanceOf[Syntax.T])
-    val al = Alpha.f(kn.asInstanceOf[Alpha.T])
-    val bt = Beta.f(al.asInstanceOf[Beta.T])
-    val as = Assoc.f(bt.asInstanceOf[Assoc.T])
-    val il = Inline.f(as.asInstanceOf[Inline.T])
-    val cf = ConstFold.f(il.asInstanceOf[ConstFold.T])
-    val el = Elim.f(cf.asInstanceOf[Elim.T])
-    val cl = Closure.f(el.asInstanceOf[KNormal.T])
-    val vt = Virtual.f(cl)
-    val sm = Simm.f(vt.asInstanceOf[Simm.Prog])
-    val ra = RegAlloc.f(sm.asInstanceOf[RegAlloc.Prog])
-    val bar = new PrintWriter(System.out)
-    f(bar, ra.asInstanceOf[Prog])
-  }
-  */
   def apply(oc:out_channel, e:Prog) = f(oc, e)
 }
 
