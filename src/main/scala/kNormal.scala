@@ -3,21 +3,7 @@ package mincaml
 import scala.collection.immutable._
 
 object KNormal extends KNormal{
-  def main(args: Array[String]) = {
-
-    val env = Map[Id.T, Type.T]("lambda"->Type.Int())
-    //val hoge = Syntax.Add(Syntax.Float(123.0),Syntax.Float(456.0))
-    //val hoge = Syntax.Not(Syntax.Bool(false))
-    //val hoge = Syntax.Var("lambda")
-    //val hoge = Syntax.App(Syntax.Var("lambda"),List(Syntax.Float(2.0), Syntax.Float(1.0)))
-    val hoge = Syntax.Let(("a",Type.Int()),Syntax.Int(1),
-      Syntax.Let(("b",Type.Int()),Syntax.Int(2),
-        Syntax.Let(("c",Type.Int()),Syntax.Int(3),
-          Syntax.Let(("d",Type.Int()),Syntax.Int(4),Syntax.Sub(Syntax.Add(Syntax.Add(Syntax.Var("a"),Syntax.Var("b")),Syntax.Var("c")),Syntax.Var("d"))))))
-
-    val kn = new KNormal
-    println(kn.f(hoge))
-  }
+  def apply(e:Syntax.T):T = f(e)
 }
 
 class KNormal {
