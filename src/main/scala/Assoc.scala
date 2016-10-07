@@ -2,25 +2,6 @@ package mincaml
 
 object Assoc extends KNormal{
 
-  /*
-  def main(args:Array[String]) = {
-
-    val hoge = Syntax.Let(("x",Type.Int()),Syntax.Let(("y",Type.Int()),Syntax.Int(3),Syntax.Add(Syntax.Var("y"),Syntax.Var("y"))),Syntax.Sub(Syntax.Var("x"),Syntax.Var("x")))
-
-    val kn = new KNormal
-    val d = kn.f(hoge)
-    println(d)
-
-    val al = Alpha.f(d.asInstanceOf[Alpha.T])
-    println(al)
-
-    val bt = Beta.f(al.asInstanceOf[Beta.T])
-    println(bt)
-
-    println(f(bt.asInstanceOf[Assoc.T]))
-
-  }
-*/
   def apply(e:KNormal.T):Inline.T = f(e.asInstanceOf[Assoc.T]).asInstanceOf[Inline.T]
 
   def f(e:T):T = {
