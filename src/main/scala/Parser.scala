@@ -4,15 +4,8 @@ import java.io.FileReader
 import scala.util.parsing.combinator._
 
 object Parser extends Parser{
-  /*
-  def main(args: Array[String]) = {
-   // new Parser().f()
-  }
-*/
-  //def apply(src:FileReader):Syntax.T = {
-  def apply():Syntax.T = {
-    val hoge = "let rec fib n = if n <= 1 then n else fib(n - 1) + fib(n -2) in fib 10"
-    parse(hoge).asInstanceOf[Syntax.T]
+  def apply(src:FileReader):Syntax.T = {
+    parse(src).asInstanceOf[Syntax.T]
   }
 
 }
@@ -78,16 +71,16 @@ class Parser extends Syntax with RegexParsers with PackratParsers {
 
 
   lazy val Expression: PackratParser[T] =
-  //repsep(Statement, SemiColon)
+    //repsep(Statement, SemiColon)
     CompaundExpression | EqualityExpression
 
   lazy val CompaundExpression: PackratParser[T] =
     IfExpression |
-      RecursiveFunctionDeclaration |
-      VariableDeclaration |
-      //TupleExpression |
-      LetTupleExpression |
-      ArrayCreateExpression
+    RecursiveFunctionDeclaration |
+    VariableDeclaration |
+    //TupleExpression |
+    LetTupleExpression |
+    ArrayCreateExpression
 
   lazy val IfExpression: PackratParser[If] =
     IF ~ Expression ~ Then ~ Expression ~ Else ~ Expression ^^ {
@@ -106,7 +99,7 @@ class Parser extends Syntax with RegexParsers with PackratParsers {
 
   lazy val FUNDEF: PackratParser[Fundef] =
     Ident ~ FormalArgList ~ Equal ~ Expression ^^ {
-      case id1 ~ arg ~ eq ~ id2 => new Fundef(addtyp(id1), arg, id2)
+      case id1 ~ arg ~ eq ~ id2 => Fundef(addtyp(id1), arg, id2)
     }
 
   lazy val FormalArgList: PackratParser[List[(Id.T, Type.T)]] =
@@ -116,7 +109,7 @@ class Parser extends Syntax with RegexParsers with PackratParsers {
 
   lazy val VariableDeclaration: PackratParser[Let] =
     LET ~ Ident ~ Equal ~ Expression ~ In ~ Expression ^^ {
-      case l ~ id ~ e ~ exp1 ~ i ~ exp2 => new Let(addtyp(id), exp1, exp2)
+      case l ~ id ~ e ~ exp1 ~ i ~ exp2 => Let(addtyp(id), exp1, exp2)
     }
 
   lazy val Elements: PackratParser[List[T]] =
@@ -126,7 +119,7 @@ class Parser extends Syntax with RegexParsers with PackratParsers {
 
   lazy val LetTupleExpression: PackratParser[LetTuple] =
     LET ~ LParen ~ Pat ~ RParen ~ Equal ~ Expression ~ In ~ Expression ^^ {
-      case l ~ lp ~ pat ~ rp ~ eq ~ exp1 ~ i ~ exp2 => new LetTuple(pat, exp1, exp2)
+      case l ~ lp ~ pat ~ rp ~ eq ~ exp1 ~ i ~ exp2 => LetTuple(pat, exp1, exp2)
     }
 
   lazy val Pat: PackratParser[List[(Id.T, Type.T)]] =
@@ -136,36 +129,36 @@ class Parser extends Syntax with RegexParsers with PackratParsers {
 
   lazy val ArrayCreateExpression: PackratParser[Array] =
     ArrayCreate ~ Expression ~ Expression ^^ {
-      case ac ~ re1 ~ re2 => new Array(re1, re2)
+      case ac ~ re1 ~ re2 => Array(re1, re2)
     }
 
   lazy val EqualityExpression: PackratParser[T] =
     chainl1(RelationalExpression, Equal ^^ {
-      case op => (l: T, r: T) => new Eq(l, r)
+      op => (l: T, r: T) => Eq(l, r)
     }
     )
 
   lazy val RelationalExpression: PackratParser[T] =
     chainl1(AdditiveExpression,
-      LessGreater ^^ { case op => (l: T, r: T) => new Not(Eq(l, r)) } |
-        LessEqual ^^ { case op => (l: T, r: T) => new LE(l, r) } |
-        Less ^^ { case op => (l: T, r: T) => new Not(LE(r, l)) } |
-        GreaterEqual ^^ { case op => (l: T, r: T) => new LE(r, l) } |
-        Greater ^^ { case op => (l: T, r: T) => new Not(LE(l, r)) }
+      LessGreater ^^ { op => (l: T, r: T) => Not(Eq(l, r)) } |
+        LessEqual ^^ { op => (l: T, r: T) => LE(l, r) } |
+        Less ^^ { op => (l: T, r: T) => Not(LE(r, l)) } |
+        GreaterEqual ^^ { op => (l: T, r: T) => LE(r, l) } |
+        Greater ^^ { op => (l: T, r: T) => Not(LE(l, r)) }
     )
 
   lazy val AdditiveExpression: PackratParser[T] =
     chainl1(MultiplicativeExpression,
-      FPlus ^^ { case op => (l: T, r: T) => new FAdd(l, r) } |
-        Plus ^^ { case op => (l: T, r: T) => new Add(l, r) } |
-        FMinus ^^ { case op => (l: T, r: T) => new FSub(l, r) } |
-        Minus ^^ { case op => (l: T, r: T) => new Sub(l, r) }
+      FPlus ^^ { op => (l: T, r: T) => FAdd(l, r) } |
+        Plus ^^ { op => (l: T, r: T) => Add(l, r) } |
+        FMinus ^^ { op => (l: T, r: T) => FSub(l, r) } |
+        Minus ^^ { op => (l: T, r: T) => Sub(l, r) }
     )
 
   lazy val MultiplicativeExpression: PackratParser[T] =
     chainl1(UnaryExpression,
-      FMUL ^^ { case op => (l: T, r: T) => new FMul(l, r) } |
-        FDIV ^^ { case op => (l: T, r: T) => new FMul(l, r) }
+      FMUL ^^ { op => (l: T, r: T) => FMul(l, r) } |
+        FDIV ^^ { op => (l: T, r: T) => FMul(l, r) }
     )
 
   lazy val UnaryExpression: PackratParser[T] =
@@ -176,7 +169,7 @@ class Parser extends Syntax with RegexParsers with PackratParsers {
   lazy val FunctionCall: PackratParser[T] =
     WriteArrayElementExpression ~ opt(ActualArgList) ^^ {
       case w ~ opt => opt match {
-        case Some(o) => new App(w, o)
+        case Some(o) => App(w, o)
         case None => w
       }
     }
@@ -189,7 +182,7 @@ class Parser extends Syntax with RegexParsers with PackratParsers {
   lazy val WriteArrayElementExpression: PackratParser[T] =
     ReadArrayElementExpression ~ opt(WriteArrayAccess) ^^ {
       case r ~ opt => opt match {
-        case Some(o) => new Put(r, o.head, o.tail.head)
+        case Some(o) => Put(r, o.head, o.tail.head)
         case None => r
       }
     }
@@ -202,20 +195,18 @@ class Parser extends Syntax with RegexParsers with PackratParsers {
   lazy val ReadArrayElementExpression: PackratParser[T] =
     SimpleExpression ~ opt(ReadArrayAccess) ^^ {
       case s ~ rep => rep match {
-        case Some(o) => new Get(s, o)
+        case Some(o) => Get(s, o)
         case None => s
       }
     }
 
   lazy val SimpleExpression: PackratParser[T] =
     BOOL |
-      //FLOAT |
-      INT |
-      Ident ^^ {
-        new Var(_)
-      } |
-      LParen ~> Expression <~ RParen |
-      LParen ~> anySpace <~ RParen ^^ { _ => Unit() }
+    //FLOAT |
+    INT |
+    Ident ^^ Var |
+    LParen ~> Expression <~ RParen |
+    LParen ~> anySpace <~ RParen ^^ { _ => Unit() }
 
   lazy val Ident: PackratParser[Id.T] =
     not(Keyword) ~> LocalID ^^ {
@@ -238,26 +229,10 @@ class Parser extends Syntax with RegexParsers with PackratParsers {
       case d ~ lp ~ e ~ rp ~ n => e
     }
 
-
-  def parse(src: String) = {
+  def parse(src: FileReader) = {
     parseAll(Expression, src) match {
       case Success(r, n) => r
       case Failure(msg, n) => throw new Exception()
     }
-
-    //val res = parseAll(Expression, "let x = (let y = 3 in y + y) in x - x")
-    //val res = parseAll(Expression, "let y = 3 in let x = y in x + y")
-    //val res = parseAll(Expression, "let rec gcd m n = if m = 0 then n else if m <= n then gcd m (n - m) else gcd n (m - n) in gcd 3 4")
-    //val res = parseAll(Expression, "lambda 2.0 1.0")
-    //val res = parseAll(Expression, "let a = 1 in let b = 2 in let c = 3 in let d = 4 in  a + b + c -d" )
-    //val res = parseAll(Pat, "apple, ho, bananana, kiwi, orange")
-    //val res = parseAll(Expression, "let hoge = 1.2 in true")
-    //val res = parseAll(Expression, "let (hoge1 , hage1  ,hoge2, hage2) = true in false" )
-    //val res = parseAll(Expression, "let rec fname arg1 arg2 = arg1 + arg2 in fname 1.1 2.2" )
-    //val res = parseAll(FunctionCall, "true.(false)<-false true.(false)<-false"  )
-    //val res = parseAll(Expression, "hoge.(1)" )
-    //val res = parseAll(Expression, "if false then 2 else 3.8" )
-    //val res = parseAll(VariableDeclaration, "let fdsfalse = false in true" )
-    //val res = parseAll(RecursiveFunctionDeclaration, "let rec va fdsfalse rue dfas = true and va fdsfalse rue dfas = true in false" )
   }
 }
